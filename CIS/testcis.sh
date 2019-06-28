@@ -107,9 +107,49 @@ else
    if [ $? -ne 1 ]; then
         echo -e "\t[+] nosuid is available on /dev/shm"
         echo -e "\t\t[*] remount /dev/shm"
-        mount -o remount,nosuid /dev/shm && echo -t "\t\t[*] Done"
+        mount -o remount,nosuid /dev/shm && echo -e "\t\t[*] Done"
    else
         echo -e "\t[-] nosuid is not available on /dev/shm"
+   fi
+fi
+
+echo "[+] 1.1.16 Ensure noexec option set on /dev/shm partition (Scored)"
+
+cat /proc/1/cgroup | grep docker &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t[-] You're inside a container so it will skipped"
+else
+   mount | grep /dev/shm | grep noexec &> /dev/null
+   if [ $? -ne 1 ]; then
+        echo -e "\t[+] noexec is available on /dev/shm"
+        echo -e "\t\t[*] remount /dev/shm"
+        mount -o remount,noexec /dev/shm && echo -e "\t\t[*] Done"
+   else
+        echo -e "\t[-] noexec is not available on /dev/shm"
+   fi
+fi
+
+echo "[+] 1.1.17 Ensure nodev option set on removable media partitions (Not Scored)"
+echo -e "\t[+] It's not scored so it will skipped"
+
+echo "[+] 1.1.18 Ensure nosuid option set on removable media partitions (Not Scored)"
+echo -e "\t[+] It's not scored so it will skipped"
+
+echo "[+] 1.1.19 Ensure noexec option set on removable media partitions (Not Scored)"
+echo -e "\t[+] It's not scored so it will skipped"
+
+echo "[+] 1.1.20 Ensure sticky bit is set on all world-writable directoried (Scored)"
+
+cat /proc/1/cgroup | grep docker &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t[-] You're inside a container so it will skipped"
+else
+   df --local -P | awk {'if (NR!=1) print $6'} | xargs -I '{}' find '{}' -xdev -type d \ { -perm -0002 -a ! -perm -1000 \) 2>/dev/null
+   if [ $? -ne 1 ]; then
+        echo -e "\t[-] No world writable directories exist without the sticky bit set"
+   else
+        echo -e "\t[+] Set the sticky bit on all world writable directories"
+        df --local -P | awk {'if (NR!=1) print $6'} | xargs -I '{}' find '{}' -xdev -type d -perm -0002 2>/dev/null | chmod a+t && echo -e "\t\t[*] Done"
    fi
 fi
 
