@@ -140,10 +140,10 @@ echo -e "\t[+] It's not scored so it will skipped"
 
 echo "[+] 1.1.20 Ensure sticky bit is set on all world-writable directoried (Scored)"
 
-cat /proc/1/cgroup | grep docker &> /dev/null
-if [ $? -ne 1 ]; then
-     echo -e "\t[-] You're inside a container so it will skipped"
-else
+#cat /proc/1/cgroup | grep docker &> /dev/null
+#if [ $? -ne 1 ]; then
+#     echo -e "\t[-] You're inside a container so it will skipped"
+#else
    df --local -P | awk {'if (NR!=1) print $6'} | xargs -I '{}' find '{}' -xdev -type d \ { -perm -0002 -a ! -perm -1000 \) 2>/dev/null
    if [ $? -ne 1 ]; then
         echo -e "\t[-] No world writable directories exist without the sticky bit set"
@@ -151,5 +151,29 @@ else
         echo -e "\t[+] Set the sticky bit on all world writable directories"
         df --local -P | awk {'if (NR!=1) print $6'} | xargs -I '{}' find '{}' -xdev -type d -perm -0002 2>/dev/null | chmod a+t && echo -e "\t\t[*] Done"
    fi
-fi
+#fi
+
+echo "[+] 1.1.21 Disable Automounting (Scored"
+
+cat /proc/1/cgroup | grep docker &> /dev/null
+#if [ $? -ne 1 ]; then
+#     echo -e "\t[-] You're inside a container so it will skipped"
+#else
+   dpkg -s autofs &> /dev/null
+   if [ $? -ne 0 ]; then
+        echo -e "\t[-] autofs is not installed, so it will skipped"
+   else
+        systemctl is-enabled autofs &> /dev/null
+        if [ $? -ne 1 ]; then
+             echo -e "\t[+] autofs is enabled, so it will disabled"
+             systemctl disable autofs &> /dev/null && echo -e "\t[*] Done"
+        else
+             echo -e "\t[-] autofs is not enabled"
+        fi
+   fi
+#fi
+
+echo "[+] 1.2 Configure Software Updates"
+echo "[+] 1.2.1 Ensure package manager repositories are configured (Not Scored)"
+echo -e "\t[-] It's not scored so it will skipped"
 
