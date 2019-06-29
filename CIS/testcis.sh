@@ -91,7 +91,7 @@ else
    if [ $? -ne 1 ]; then
         echo -e "\t[+] nodev is available on /dev/shm"
         echo -e "\t\t[*] remount /dev/shm"
-        mount -o remount,nosuid /dev/shm && echo -e "\t\t[*] Done"
+        mount -o remount,nosuid /dev/shm; echo -e "\t\t[*] Done"
    else
         echo -e "\t[-] nodev is not available on /dev/shm"
    fi
@@ -107,7 +107,7 @@ else
    if [ $? -ne 1 ]; then
         echo -e "\t[+] nosuid is available on /dev/shm"
         echo -e "\t\t[*] remount /dev/shm"
-        mount -o remount,nosuid /dev/shm && echo -e "\t\t[*] Done"
+        mount -o remount,nosuid /dev/shm; echo -e "\t\t[*] Done"
    else
         echo -e "\t[-] nosuid is not available on /dev/shm"
    fi
@@ -123,7 +123,7 @@ else
    if [ $? -ne 1 ]; then
         echo -e "\t[+] noexec is available on /dev/shm"
         echo -e "\t\t[*] remount /dev/shm"
-        mount -o remount,noexec /dev/shm && echo -e "\t\t[*] Done"
+        mount -o remount,noexec /dev/shm; echo -e "\t\t[*] Done"
    else
         echo -e "\t[-] noexec is not available on /dev/shm"
    fi
@@ -149,7 +149,7 @@ echo "[+] 1.1.20 Ensure sticky bit is set on all world-writable directoried (Sco
         echo -e "\t[-] No world writable directories exist without the sticky bit set"
    else
         echo -e "\t[+] Set the sticky bit on all world writable directories"
-        df --local -P | awk {'if (NR!=1) print $6'} | xargs -I '{}' find '{}' -xdev -type d -perm -0002 2>/dev/null | chmod a+t && echo -e "\t\t[*] Done"
+        df --local -P | awk {'if (NR!=1) print $6'} | xargs -I '{}' find '{}' -xdev -type d -perm -0002 2>/dev/null | chmod a+t; echo -e "\t\t[*] Done"
    fi
 #fi
 
@@ -166,7 +166,7 @@ cat /proc/1/cgroup | grep docker &> /dev/null
         systemctl is-enabled autofs &> /dev/null
         if [ $? -ne 1 ]; then
              echo -e "\t[+] autofs is enabled, so it will disabled"
-             systemctl disable autofs &> /dev/null && echo -e "\t[*] Done"
+             systemctl disable autofs &> /dev/null; echo -e "\t[*] Done"
         else
              echo -e "\t[-] autofs is not enabled"
         fi
@@ -174,6 +174,38 @@ cat /proc/1/cgroup | grep docker &> /dev/null
 #fi
 
 echo "[+] 1.2 Configure Software Updates"
+
 echo "[+] 1.2.1 Ensure package manager repositories are configured (Not Scored)"
 echo -e "\t[-] It's not scored so it will skipped"
 
+echo "[+] 1.2.2 Ensure GPG keys are configured (Not Scored)"
+echo -e "\t[-] It's not scored so it will skipped"
+
+echo "[+] 1.3 Filesystem Integrity Checking"
+
+echo "[+] 1.3.1 Ensure AIDE is intalled (Scored)"
+dpkg -s aide &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t[+] AIDE is already installed"
+     echo -e "\t[*] Configuring AIDE"
+     aide --init &> /dev/null; echo -e "\t\t[*] Done"
+else
+     echo -e "\t[+] AIDE is not installed yet, so it will installed now"
+     apt-get install aide -y &> /dev/null
+     echo -e "\t[*] Installed is done, now it will configured"
+     aide --init &> /dev/null; echo -e "\t\t[*] Done"
+fi
+
+echo "[+] 1.3.2 Ensure filesystem integrity is regulary checked (Scored)"
+crontab -u root -l | grep aide &> /dev/null
+if [ $? -ne 1 ]; then
+   echo -e "\t[-] Filesystem integrity is already regulary checked"
+else
+   echo -e "\t[+] Filesystem integrity is not regulary checked yet"
+   echo -e "\t\t[*] Creating cron filesystem integrity regulary checked"
+   crontab -l > /usr/src/cronaide
+   echo "0 5 * * * /usr/bin/aide --check" >> /usr/src/cronaide
+   crontab /usr/src/cronaide; echo -e "\t\t[*] Restarting cron"
+   rm /usr/src/cronaide
+   service cron restart &> /dev/null; echo -e "\t\t[*] Done"
+fi
