@@ -240,16 +240,78 @@ else
      echo -e "\t[-] Your root user is already have a password"
 fi
 
-echo "[+][+] Additional Process Hardening"
+echo "[+][+] 1.5 Additional Process Hardening [+][+]"
 echo "[+] 1.5.1 Ensure core dumps are restricted (Scored)"
 grep "hard core" /etc/security/limits.conf /etc/security/limit.d/* &> /dev/null
 if [ $? -ne 1 ]; then
      echo -e "\t[-] hardcore already set on limits.conf"
+     echo -e "\t[-] fs.suid_dumpable already set to 0 on sysctl.conf"
 else
      echo "[*] Set hard core to 0 on limits.conf "
      echo "* hard core 0" >> /etc/security/limits.conf; echo -e "\t\t[*] Done"
      echo "[*] Change fs.suid_dumpable to 0 on sysctl.conf"
      cp templates/sysctl-CIS.conf /etc/sysctl.conf
+     sysctl -w fs.suid_dumpable=0 &> /dev/null
      sysctl -e -p &> /dev/null; echo -e "\t\t[*] Done"
 fi
 
+echo "[+] 1.5.2 Ensure XD/NX support is enabled (Not Scored)"
+echo -e "\t [-]It's not scored so it will skipped"
+
+echo "[+] 1.5.3 Ensure address aspace layour randomization (ASLR) is enabled (Scored)"
+sysctl kernel.randomize_va_space &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t[-] kernel.randomize_va_space already set to 2"
+     echo -e "\t[*] Activated Kernel Parameter"
+     sysctl -w kernel.randomize_va_space=2 &> /dev/null; echo -e "\t\t[*] Done"
+else
+     echo -e "\t[+] Activated Kernel Parameter"
+     sysctl -w kernel.randomize_va_sapce=2 &> /dev/null; echo -e "\t\t[*] Done"
+fi
+
+echo "[+] 1.5.4 Ensure prelink is disabled (Scored)"
+dpkg -s prelink &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t[-] prelink is installed so it will removed"
+     echo -e "\t[*] Restore binaries to normal"
+     prelink -ua &> /dev/null; echo -e "\t\t[*] Done"
+     echo -e "\t[*] Removing prelink"
+     apt-get remove -y prelink &> /dev/null; echo -e "\t\t[*] Done"
+else
+     echo -e "\t[-] prelink is not installed"
+fi
+
+echo "[+][+] 1.6 Mandatory Access Control [+][+]"
+echo "[+] 1.6.1 Configure SELinux"
+echo -e "\t[+] 1.6.1.1 Ensure SELinux is not disabled is bootloader configuration (Scored)"
+cat /proc/1/cgroup | grep docker &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[-] You're inside a container so it will skipped"
+else
+     grep "^\s*linux" /boot/grup/grub.cfg | grep selinux=0 &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[*] Please remove all instances of selinux=0 and enforcing=0"
+          sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"/GRUB_CMDLINE_LINUX_DEFAULT="quiet"'
+          echo -e "\t\t\t[*] Done"
+          echo -e "\t\t[*] Updating grub2 configuration"
+          update-grub; echo -e "\t\t\t[*] Done"
+     else
+          echo -e "\t\t[-] Nothing Change"
+     fi
+fi
+
+echo -e "\t[+] 1.6.1.2 Ensure the SELinux state is enforcing (Scored)"
+dpkg -s selinux &> /dev/null
+if [ $? -ne 1 ]; then
+     grep SELINUX=enforcing /etc/selinux/config &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[-] SELinux is already set to enforcing"
+     else
+          echo -e "\t\t[*] Change SELINUX paramater to enforcing"
+          sed -i 's/SELINUX=/#SELINUX/g' /etc/selinux/config
+          echo "SELINUX=enforcing" >> /etc/selinux/config
+          echo -e "\t\t\t[*] Done"
+     fi
+else
+     echo -e "\t\t[-] SELinux is not installed"
+fi
