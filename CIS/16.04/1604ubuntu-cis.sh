@@ -343,14 +343,25 @@ else
      echo -e "\t\t[*] Done"
 fi
 
-echo -e "\t[+] 1.6.2 Configure AppArmor"
-echo -e "\t\t[+] 1.6.2.1 Ensure AppArmor is not disabled in bootloader configuration (Scored)"
+echo -e "[+] 1.6.2 Configure AppArmor"
+echo -e "\t[+] 1.6.2.1 Ensure AppArmor is not disabled in bootloader configuration (Scored)"
 grep "quiet" /etc/default/grub &> /dev/null
 if [ $? -ne 1 ]; then
      echo -e "\t\t[-] This requirement is already set on requirement 1.6.1.1"
 else
      sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quite splash"/GRUB_CMDLINE_LINUX_DEFAULT="quite"' /etc/default/grub
-     update-grub; echo -e "\t\t\t[*] Done"
+     update-grub; echo -e "\t\t[*] Done"
+fi
+
+echo "[+] 1.6.2.2 Ensure all AppArmor Profiles are enforcing (Scored)"
+dpkg -s apparmor
+if [ $? -ne 1 ]; then
+     echo -e "\t[-] AppArmor is already installed"
+     echo -e "\t[*] Set all profiles to enforce mode"
+     aa-enforce /etc/apparmor.d/* &> /dev/null
+     echo -e "\t\t[*] Done"
+else
+     echo -e "\t[-] AppArmor is not installed"
 fi
 
 
