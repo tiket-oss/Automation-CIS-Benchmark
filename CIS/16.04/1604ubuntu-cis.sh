@@ -382,4 +382,14 @@ else
      echo -e "\t\t[*] Done"
 fi
 
+echo "[+] 1.7 Warning Banners"
+echo -e "\t[+] 1.7.1 Command Line Warning Banners"
+echo -e "\t\t[+] 1.7.1.1 Ensure message of the day is configured properly (Scored)"
+egrep '(\\v|\\r|\\m|\\s)' /etc/motd  &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t\t[-] Please remove any instances of \m, \r, \s, or \v"
+else
+     echo -e "\t\t\t[-] Message of the day is already configured properly"
+fi
+
 
