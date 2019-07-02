@@ -354,7 +354,7 @@ else
 fi
 
 echo "[+] 1.6.2.2 Ensure all AppArmor Profiles are enforcing (Scored)"
-dpkg -s apparmor
+dpkg -s apparmor &> /dev/null
 if [ $? -ne 1 ]; then
      echo -e "\t[-] AppArmor is already installed"
      echo -e "\t[*] Set all profiles to enforce mode"
@@ -362,6 +362,24 @@ if [ $? -ne 1 ]; then
      echo -e "\t\t[*] Done"
 else
      echo -e "\t[-] AppArmor is not installed"
+fi
+
+echo "[+] 1.6.3 Ensure SELinux or AppArmor are installed (Not Scored)"
+dpkg -s selinux &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t[-] SELinux is already installed"
+else
+     echo -e "\t[+] Installed SELinux"
+     apt-get install selinux -y &> /dev/null
+     echo -e "\t\t[*] Done"
+fi
+dpkg -s apparmor &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t[-] AppArmor is already installed"
+else
+     echo -e "\t[+] Installed AppArmor"
+     apt-get install apparmor -y &> /dev/null
+     echo -e "\t\t[*] Done"
 fi
 
 
