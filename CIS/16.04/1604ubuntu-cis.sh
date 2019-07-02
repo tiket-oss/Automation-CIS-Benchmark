@@ -332,4 +332,13 @@ if [ $? -ne 1 ]; then
 else
      echo -e "\e\e[-] SELinux is not installed yet"
 fi
-     
+
+echo -e "\t[+] 1.6.1.4 Ensure no unconfined daemons exist (Scored)"
+ps -eZ | egrep "initrc" | egrep -vw "tr|ps|egrep|bash|awk" | tr ':' ' ' | awk '{ print $NF }' &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[-] No unconfined daemons exist"
+else
+     ps -eZ | egrep "initrc" | egrep -vw "tr|ps|egrep|bash|awk" | tr ':' ' ' | awk '{ print $NF }' >> Unconfined-Daemons.txt
+     echo -e "\t\t[*] Uncofined daemons is found, saved at Unconfined-Daemons.txt"
+     echo -e "\t\t[*] Done"
+fi
