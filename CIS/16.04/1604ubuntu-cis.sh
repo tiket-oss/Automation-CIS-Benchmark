@@ -315,3 +315,21 @@ if [ $? -ne 1 ]; then
 else
      echo -e "\t\t[-] SELinux is not installed"
 fi
+
+echo -e "\t[+] 1.6.1.3 Ensure SELinux policy is configured (Scored)"
+dpkg -s selinux &> /dev/null
+if [ $? -ne 1 ]; then
+     grep SELINUXTYPE=ubuntu /etc/selinux/config &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[-] SELINUXTYPE is already set to ubuntu"
+     else
+          echo -e "\t\t[+] SELINUXTYPE is not ubuntu so it will change"
+          echo -e "\t\t[*] Change SELINUXTYPE to ubuntu"
+          sed -i 's/SELINUXTYPE/#SELINUXTYPE/g' /etc/selinux/config
+          echo "SELINUXTYPE=ubuntu" >> /etc/selinux/config
+          echo -e "\t\t\t[*] Done"
+     fi
+else
+     echo -e "\e\e[-] SELinux is not installed yet"
+fi
+     
