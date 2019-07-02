@@ -291,7 +291,7 @@ else
      grep "^\s*linux" /boot/grup/grub.cfg | grep selinux=0 &> /dev/null
      if [ $? -ne 1 ]; then
           echo -e "\t\t[*] Please remove all instances of selinux=0 and enforcing=0"
-          sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"/GRUB_CMDLINE_LINUX_DEFAULT="quiet"'
+          sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"/GRUB_CMDLINE_LINUX_DEFAULT="quiet"' /etc/default/grub
           echo -e "\t\t\t[*] Done"
           echo -e "\t\t[*] Updating grub2 configuration"
           update-grub; echo -e "\t\t\t[*] Done"
@@ -342,3 +342,15 @@ else
      echo -e "\t\t[*] Uncofined daemons is found, saved at Unconfined-Daemons.txt"
      echo -e "\t\t[*] Done"
 fi
+
+echo -e "\t[+] 1.6.2 Configure AppArmor"
+echo -e "\t\t[+] 1.6.2.1 Ensure AppArmor is not disabled in bootloader configuration (Scored)"
+grep "quiet" /etc/default/grub &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[-] This requirement is already set on requirement 1.6.1.1"
+else
+     sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quite splash"/GRUB_CMDLINE_LINUX_DEFAULT="quite"' /etc/default/grub
+     update-grub; echo -e "\t\t\t[*] Done"
+fi
+
+
