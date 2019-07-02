@@ -173,7 +173,7 @@ cat /proc/1/cgroup | grep docker &> /dev/null
    fi
 #fi
 
-echo "[+] 1.2 Configure Software Updates"
+echo "[+][+] 1.2 Configure Software Updates [+][+]"
 
 echo "[+] 1.2.1 Ensure package manager repositories are configured (Not Scored)"
 echo -e "\t[-] It's not scored so it will skipped"
@@ -209,3 +209,25 @@ else
    rm /usr/src/cronaide
    service cron restart &> /dev/null; echo -e "\t\t[*] Done"
 fi
+
+echo "[+][+] 1.4 Secure Boot Settings [+][+]"
+echo "[+] 1.4.1 Ensure permissions on bootloader config are configured (Scored)"
+echo -e "\t[*] Configuring permission bootloader"
+chown root:root /boot/grub/grub.cfg &> /dev/null
+chown og-rwx /boot/grub/grub.cfg &> /dev/null; echo -e "\t\t[*] Done"
+
+echo "[+] 1.4.2 Ensure bootloader password is set (Scored)"
+echo -e "\t [+] We will now set a Bootloader password"
+cat /proc/1/cgroup | grep docker &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t [-] You're inside a container so it will skipped"
+else
+     grub-mkpasswd-pbkdf2 | tee grubpassword.tmp
+     grubpassword=$(cat grubpassword.tmp | sed -e '1,2d' | cut -d ' ' -f7)
+     echo " set superusers="root" " >> /etc/grub.d/40_custom
+     echo " password_pbkdf2 root $grubpassword " >> /etc/grub.d/40_custom
+     rm grubpassword.tmp
+     update-grub; echo -e "\t\t [*] Done"
+fi
+
+
