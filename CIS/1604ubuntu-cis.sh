@@ -217,10 +217,10 @@ chown root:root /boot/grub/grub.cfg &> /dev/null
 chown og-rwx /boot/grub/grub.cfg &> /dev/null; echo -e "\t\t[*] Done"
 
 echo "[+] 1.4.2 Ensure bootloader password is set (Scored)"
-echo -e "\t [+] We will now set a Bootloader password"
+echo -e "\t[+] We will now set a Bootloader password"
 cat /proc/1/cgroup | grep docker &> /dev/null
 if [ $? -ne 1 ]; then
-     echo -e "\t [-] You're inside a container so it will skipped"
+     echo -e "\t[-] You're inside a container so it will skipped"
 else
      grub-mkpasswd-pbkdf2 | tee grubpassword.tmp
      grubpassword=$(cat grubpassword.tmp | sed -e '1,2d' | cut -d ' ' -f7)
@@ -230,4 +230,13 @@ else
      update-grub; echo -e "\t\t [*] Done"
 fi
 
+echo "[+] 1.4.3 Ensure authentication required for single user mode (Scored)"
+grep ^root:[*\!]: /etc/shadow &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t[+] Your root user is doesn't have password yet, so we will create it"
+     passwd root; echo -e "\t[*] Your root password already changed"
+     echo -e "\t[*] Done"
+else
+     echo -e "\t[-] Your root user is already have a password"
+fi
 
