@@ -428,4 +428,22 @@ echo -e "\t\t\t[*] Changing permssions on /etc/issue.net"
 chown root:root /etc/issue.net
 chmod 644 /etc/issue.net; echo -e "\t\t\t\t[*] Done"
 
-
+echo -e "\t[+] 1.7.2 Ensure GDM login banner is configured (Scored)"
+dpkg -s gdm &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[*] Configuring /etc/dconf/profile/gdm and /etc/dconf/db/gdm.d/01-banner-message"
+     sed -i 's/user-db/#user-db/g' /etc/dconf/profile/gdm
+     sed -i 's/system-db/#system-db/g' /etc/dconf/profile/gdm
+     sed -i 's/file-db/#file-db/g' /etc/dconf/profile/gdm
+     sed -i 's/banner-message/#banner-message/g' /etc/dconf/db/gdm.d/01-banner-message
+     echo "user-db:user" >> /etc/dconf/profile/gdm
+     echo "system-db:gdm" >> /etc/dconf/profile/gdm
+     echo "file-db:/usr/share/gdm/greeter-dconf-defaults" >> /etc/dconf/profile/gdm
+     echo "banner-message-enable=true" >> /etc/dconf/db/gdm.d/01-banner-message
+     echo "banner-message-text='Authorized uses only. All activity may be monitored and reported.'" >> /etc/dconf/db/gdm.d/01-banner-message
+     echo -e "\t\t\t[*] Done"
+     echo -e "\t\t[*] Updating dconf"
+     dconf update; echo -e "\t\t\t[*] Done"
+else
+     echo -e "\t\t[-] Dconf is not installed"
+fi
