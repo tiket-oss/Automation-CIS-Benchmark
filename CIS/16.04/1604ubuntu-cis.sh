@@ -422,3 +422,10 @@ echo -e "\t\t[+] 1.7.1.5 Ensure permissions on /etc/issue are configured (Scored
 echo -e "\t\t\t[*] Changing permissions on /etc/issue"
 chown root:root /etc/issue
 chmod 644 /etc/issue; echo -e "\t\t\t\t[*] Done"
+
+echo -e "\t\t[+] 1.7.1.6 Ensure permissions on /etc/issue.net are configured (Not Scored)"
+echo -e "\t\t\t[*] Changing permssions on /etc/issue.net"
+chown root:root /etc/issue.net
+chmod 644 /etc/issue.net; echo -e "\t\t\t\t[*] Done"
+
+
