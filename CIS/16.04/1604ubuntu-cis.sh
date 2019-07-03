@@ -417,3 +417,8 @@ if test -f "$MOTD"; then
 else
      echo -e "\t\t\t[-] File /etc/motd is not exists"
 fi
+
+echo -e "\t\t[+] 1.7.1.5 Ensure permissions on /etc/issue are configured (Scored)"
+echo -e "\t\t\t[*] Changing permissions on /etc/issue"
+chown root:root /etc/issue
+chmod 644 /etc/issue; echo -e "\t\t\t\t[*] Done"
