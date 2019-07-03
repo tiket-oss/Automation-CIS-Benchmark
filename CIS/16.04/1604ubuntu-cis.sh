@@ -408,4 +408,12 @@ else
      echo -e "\t\t\t[-] /etc/issue.net Already configured properly"
 fi
 
-
+echo -e "\t\t[+] 1.7.1.4 Ensure permissions on /etc/motd are configured (Not Scored)"
+MOTD=/etc/motd
+if test -f "$MOTD"; then
+     echo -e "\t\t\t[*] Changing permission on /etc/motd"
+     chown root:root /etc/motd
+     chown 644 /etc/motd; echo -e "\t\t\t\t[*] Done"
+else
+     echo -e "\t\t\t[-] File /etc/motd is not exists"
+fi
