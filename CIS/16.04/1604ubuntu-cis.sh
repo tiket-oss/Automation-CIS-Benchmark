@@ -382,14 +382,30 @@ else
      echo -e "\t\t[*] Done"
 fi
 
-echo "[+] 1.7 Warning Banners"
+echo "[+][+] 1.7 Warning Banners [+][+]"
 echo -e "\t[+] 1.7.1 Command Line Warning Banners"
 echo -e "\t\t[+] 1.7.1.1 Ensure message of the day is configured properly (Scored)"
 egrep '(\\v|\\r|\\m|\\s)' /etc/motd  &> /dev/null
 if [ $? -ne 1 ]; then
-     echo -e "\t\t\t[-] Please remove any instances of \m, \r, \s, or \v"
+     echo -e "\t\t\t[+] Please remove any instances of \m, \r, \s, or \v"
 else
      echo -e "\t\t\t[-] Message of the day is already configured properly"
+fi
+
+echo -e "\t\t[+] 1.7.1.2 Ensure local login warning banner is configured properly (Not Scored)"
+egrep '(\\v|\\r|\\m|\\s)' /etc/issue &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t\t[+] Please remove \m, \r, \s, or \v from any instances"
+else
+     echo -e "\t\t\t[-] /etc/issue Already configured properly"
+fi
+
+echo -e "\t\t[+] 1.7.1.3 Ensure remote login warning banner is configured properly (Not Scored)"
+egrep '(\\v|\\r|\\m|\\s)' /etc/issue.net &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t\t[+] Please remove \m, \r, \s, or \v from any instances"
+else
+     echo -e "\t\t\t[-] /etc/issue.net Already configured properly"
 fi
 
 
