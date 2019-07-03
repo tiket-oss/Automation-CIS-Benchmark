@@ -447,3 +447,18 @@ if [ $? -ne 1 ]; then
 else
      echo -e "\t\t[-] Dconf is not installed"
 fi
+
+echo "[+] 1.8 Ensure updates, patches, and additional security software are installed (Not Scored)"
+apt-get -s upgrade -y &> /dev/null; echo -e "\t[*] Done"
+
+echo "[+][+] 2.1 inetd Services [+][+]"
+echo -e "\t[+] 2.1.1 Ensure chargen services are not enabled (Scored)"
+dpkg -s xinetd &> /dev/null 
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[*] Disabling charged services"
+     sed -i 's/chargen/#chargen/g' /etc/xinetd.conf
+     find /etc/xinetd.d -type f -exec sed -i "s/chargen/#chargen/g" {} \;
+     echo -e "\t\t\t[*] Done"
+else
+     echo -e "\t\t[-] inetd or xinetd is not installed yet"
+fi
