@@ -455,17 +455,35 @@ echo "[+][+] 2.1 inetd Services [+][+]"
 echo -e "\t[+] 2.1.1 Ensure chargen services are not enabled (Scored)"
 dpkg -s xinetd &> /dev/null 
 if [ $? -ne 1 ]; then
-     cat /etc/xinetd.d/* | grep "#chargen" &> /dev/null
+     cat /etc/xinetd.d/* | grep "#service chargen" &> /dev/null
      if [ $? -ne 1 ]; then
           echo -e "\t\t[-] chargen already disabled"
      else
-          echo -e "\t\t[*] Disabling charged services"
+          echo -e "\t\t[*] Disabling chargen services"
           sed -i 's/chargen/#chargen/g' /etc/xinetd.conf
-          find /etc/xinetd.d -type f -exec sed -i "s/chargen/#chargen/g" {} \;
+          find /etc/xinetd.d -type f -exec sed -i "s/service chargen/#service chargen/g" {} \;
+          sed -i '1,26 s/^/#/' /etc/xinetd.d/chargen
           echo -e "\t\t\t[*] Done"
      fi
 else
      echo -e "\t\t[-] inetd or xinetd is not installed yet"
 fi
 
-echo "[+]"
+echo -e "\t[+] 2.1.2 Ensure daytime services are not enabled (Scored)"
+dpkg -s xinetd &> /dev/null
+if [ $? -ne 1 ]; then
+     cat /etc/xinetd.d/* | grep "#service daytime" &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[-] daytime services already disabled"
+     else
+          echo -e "\t\t[*] Disabling daytime services"
+          sed -i 's/daytime/#daytime/g' /etc/xinetd.conf
+          find /etc/xinetd.d -type f -exec sed -i "s/service daytime/#service daytime/g" {} \;
+          sed -i '1,26 s/^/#/' /etc/xinetd.d/daytime
+          echo -e "\t\t\t[*] Done"
+     fi
+else
+     echo -e "\t\t[-] inetd or xinetd is not installed yet"
+fi
+
+echo -e "\t[+] 2.1.3 Ensure discard services are not enabled (Scored)"
