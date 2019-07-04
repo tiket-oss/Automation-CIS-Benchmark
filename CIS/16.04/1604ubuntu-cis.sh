@@ -51,8 +51,15 @@ fi
 
 dpkg -s hfsplus &> /dev/null
 if [ $? -ne 1 ]; then
-     echo -e "\t\t[+] hfsplus is installed so it will be disable"
-     echo "install hfsplus /bin/true" >> /etc/modprobe.d/CIS.conf
+     touch /etc/modprobe.d/CIS.conf
+     cat /etc/modprobe.d/CIS.conf | grep hfsplus &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[-] hfsplus already disabled"
+     else
+          echo -e "\t\t[+] hfsplus is installed so it will be disable"
+          echo "install hfsplus /bin/true" >> /etc/modprobe.d/CIS.conf
+          echo -e "\t\t\t[*] Done"
+     fi
 else
      echo -e "\t\t[-] hfsplus is not installed"
 fi
@@ -536,3 +543,33 @@ if [ $? -ne 1 ]; then
 else
      echo -e "\t\t[-] inetd or xinetd is not installed yet"
 fi
+
+echo -e "\t[+] 2.1.6 Ensure rsh server is not enabled (Scored)"
+cat /etc/xinetd.d/* | grep "shell" &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[*] Disabling shell on inet or xinet"
+     find /etc/xinetd.d -type f -exec sed -i "/s/shell/#shell/g" {} \;
+     echo -e "\t\t\t[*] Done"
+else
+     echo -e "\t\t[-] shell on inet or xinet is not found"
+fi
+
+cat /etc/xinetd.d/* | grep "login" &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[*] Disabling login on inet or xinet"
+     find /etc/xinetd.d -type f -exec sed -i "/s/login/#login/g" {} \;
+     echo -e "\t\t\t[*] Done"
+else
+     echo -e "\t\t[-] login on inet or xinet is not found"
+fi
+
+cat /etc/xinetd.d/* | grep "exec" &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[*] Disabling exec on inet or xinet"
+     find /etc/xinetd.d -type f -exec sed -i "/s/exec/#exec/g" {} \;
+     echo -e "\t\t\t\[*] Done"
+else
+     echo -e "\t\t[-] exec on inet or xinet is not found"
+fi
+
+
