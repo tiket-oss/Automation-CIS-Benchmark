@@ -520,4 +520,19 @@ else
      echo -e "\t\t[-] inetd or xinetd is not installed yet"
 fi
 
-
+echo -e "\t[+] 2.1.5 Ensure time services are not enabled (Scored)"
+dpkg -s xinetd &> /dev/null
+if [ $? -ne 1 ]; then
+     cat /etc/xinetd.d/* | grep "#service time" &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[-] time services already disabled"
+     else
+          echo -e "\t\t[*] Disabling time servies"
+          sed -i 's/time/#time/g' /etc/xinetd.conf
+          find /etc/xinetd.d -type f -exec sed -i "s/service time/#service time/g" {} \;
+          sed -i '1,26 s/^/#/' /etc/xinetd.d/time
+          echo -e "\t\t\t[*] Done"
+     fi
+else
+     echo -e "\t\t[-] inetd or xinetd is not installed yet"
+fi
