@@ -560,6 +560,7 @@ if [ $? -ne 1 ]; then
      find /etc/xinetd.d -type f -exec sed -i "/s/login/#login/g" {} \;
      echo -e "\t\t\t[*] Done"
 else
+
      echo -e "\t\t[-] login on inet or xinet is not found"
 fi
 
@@ -577,6 +578,7 @@ cat /etc/xinetd.d/* | grep talk &> /dev/null
 if [ $? -ne 1 ]; then
      echo -e "\t\t[*] Disabling talk on inet or xinet"
      find /etc/xinetd.d -type f -exec sed -i "/s/talk/#talk/g" {} \;
+     #apt-get remove talk -y &> /dev/null
      echo -e "\t\t\t[*] Done"
 else
      echo -e "\t\t[-] talk on inet or xinet is not found"
@@ -586,9 +588,20 @@ cat /etc/xinetd.d/* | grep ntalk &> /dev/null
 if [ $? -ne 1 ]; then
      echo -e "\t\t[*] Disabling ntalk on inet or xinet"
      find /etc/xinetd.d -type f -exec sed -i "/s/ntalk/#ntalk/g" {} \;
+     #apt-get remove ntalk -y &> /dev/null
      echo -e "\t\t\t[*] Done"
 else
      echo -e "\t\t[-] ntalk on inet or xinet is not found"
+fi
+
+echo -e "\t[+] 2.1.8 Ensure telnet server is not enabled (Scored)"
+cat /etc/xinetd.d/* | grep telnet &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[*] Disabling telnet on inet or xinet"
+     find /etc/xinetd.d -type f -exec sed -i "/s/telnet/#telnet/g" {} \;
+     echo -e "\t\t\t[*] Done"
+else
+     echo -e "\t\t[-] telnet on inet or xinet is not found"
 fi
 
 
