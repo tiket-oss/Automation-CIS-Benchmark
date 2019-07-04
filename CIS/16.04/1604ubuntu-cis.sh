@@ -51,8 +51,15 @@ fi
 
 dpkg -s hfsplus &> /dev/null
 if [ $? -ne 1 ]; then
-     echo -e "\t\t[+] hfsplus is installed so it will be disable"
-     echo "install hfsplus /bin/true" >> /etc/modprobe.d/CIS.conf
+     touch /etc/modprobe.d/CIS.conf
+     cat /etc/modprobe.d/CIS.conf | grep hfsplus &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[-] hfsplus already disabled"
+     else
+          echo -e "\t\t[+] hfsplus is installed so it will be disable"
+          echo "install hfsplus /bin/true" >> /etc/modprobe.d/CIS.conf
+          echo -e "\t\t\t[*] Done"
+     fi
 else
      echo -e "\t\t[-] hfsplus is not installed"
 fi
@@ -291,7 +298,7 @@ else
      grep "^\s*linux" /boot/grup/grub.cfg | grep selinux=0 &> /dev/null
      if [ $? -ne 1 ]; then
           echo -e "\t\t[*] Please remove all instances of selinux=0 and enforcing=0"
-          sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"/GRUB_CMDLINE_LINUX_DEFAULT="quiet"'
+          sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"/GRUB_CMDLINE_LINUX_DEFAULT="quiet"' /etc/default/grub
           echo -e "\t\t\t[*] Done"
           echo -e "\t\t[*] Updating grub2 configuration"
           update-grub; echo -e "\t\t\t[*] Done"
@@ -332,4 +339,287 @@ if [ $? -ne 1 ]; then
 else
      echo -e "\e\e[-] SELinux is not installed yet"
 fi
-     
+
+echo -e "\t[+] 1.6.1.4 Ensure no unconfined daemons exist (Scored)"
+ps -eZ | egrep "initrc" | egrep -vw "tr|ps|egrep|bash|awk" | tr ':' ' ' | awk '{ print $NF }' &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[-] No unconfined daemons exist"
+else
+     ps -eZ | egrep "initrc" | egrep -vw "tr|ps|egrep|bash|awk" | tr ':' ' ' | awk '{ print $NF }' >> Unconfined-Daemons.txt
+     echo -e "\t\t[*] Uncofined daemons is found, saved at Unconfined-Daemons.txt"
+     echo -e "\t\t[*] Done"
+fi
+
+echo -e "[+] 1.6.2 Configure AppArmor"
+echo -e "\t[+] 1.6.2.1 Ensure AppArmor is not disabled in bootloader configuration (Scored)"
+grep "quiet" /etc/default/grub &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[-] This requirement is already set on requirement 1.6.1.1"
+else
+     sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quite splash"/GRUB_CMDLINE_LINUX_DEFAULT="quite"' /etc/default/grub
+     update-grub; echo -e "\t\t[*] Done"
+fi
+
+echo "[+] 1.6.2.2 Ensure all AppArmor Profiles are enforcing (Scored)"
+dpkg -s apparmor &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t[-] AppArmor is already installed"
+     echo -e "\t[*] Set all profiles to enforce mode"
+     aa-enforce /etc/apparmor.d/* &> /dev/null
+     echo -e "\t\t[*] Done"
+else
+     echo -e "\t[-] AppArmor is not installed"
+fi
+
+echo "[+] 1.6.3 Ensure SELinux or AppArmor are installed (Not Scored)"
+dpkg -s selinux &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t[-] SELinux is already installed"
+else
+     echo -e "\t[+] Installed SELinux"
+     apt-get install selinux -y &> /dev/null
+     echo -e "\t\t[*] Done"
+fi
+dpkg -s apparmor &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t[-] AppArmor is already installed"
+else
+     echo -e "\t[+] Installed AppArmor"
+     apt-get install apparmor -y &> /dev/null
+     echo -e "\t\t[*] Done"
+fi
+
+echo "[+][+] 1.7 Warning Banners [+][+]"
+echo -e "\t[+] 1.7.1 Command Line Warning Banners"
+echo -e "\t\t[+] 1.7.1.1 Ensure message of the day is configured properly (Scored)"
+egrep '(\\v|\\r|\\m|\\s)' /etc/motd  &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t\t[+] Please remove any instances of \m, \r, \s, or \v"
+else
+     echo -e "\t\t\t[-] Message of the day is already configured properly"
+fi
+
+echo -e "\t\t[+] 1.7.1.2 Ensure local login warning banner is configured properly (Not Scored)"
+egrep '(\\v|\\r|\\m|\\s)' /etc/issue &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t\t[+] Please remove \m, \r, \s, or \v from any instances"
+else
+     echo -e "\t\t\t[-] /etc/issue Already configured properly"
+fi
+
+echo -e "\t\t[+] 1.7.1.3 Ensure remote login warning banner is configured properly (Not Scored)"
+egrep '(\\v|\\r|\\m|\\s)' /etc/issue.net &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t\t[+] Please remove \m, \r, \s, or \v from any instances"
+else
+     echo -e "\t\t\t[-] /etc/issue.net Already configured properly"
+fi
+
+echo -e "\t\t[+] 1.7.1.4 Ensure permissions on /etc/motd are configured (Not Scored)"
+MOTD=/etc/motd
+if test -f "$MOTD"; then
+     echo -e "\t\t\t[*] Changing permission on /etc/motd"
+     chown root:root /etc/motd
+     chown 644 /etc/motd; echo -e "\t\t\t\t[*] Done"
+else
+     echo -e "\t\t\t[-] File /etc/motd is not exists"
+fi
+
+echo -e "\t\t[+] 1.7.1.5 Ensure permissions on /etc/issue are configured (Scored)"
+echo -e "\t\t\t[*] Changing permissions on /etc/issue"
+chown root:root /etc/issue
+chmod 644 /etc/issue; echo -e "\t\t\t\t[*] Done"
+
+echo -e "\t\t[+] 1.7.1.6 Ensure permissions on /etc/issue.net are configured (Not Scored)"
+echo -e "\t\t\t[*] Changing permssions on /etc/issue.net"
+chown root:root /etc/issue.net
+chmod 644 /etc/issue.net; echo -e "\t\t\t\t[*] Done"
+
+echo -e "\t[+] 1.7.2 Ensure GDM login banner is configured (Scored)"
+dpkg -s gdm &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[*] Configuring /etc/dconf/profile/gdm and /etc/dconf/db/gdm.d/01-banner-message"
+     sed -i 's/user-db/#user-db/g' /etc/dconf/profile/gdm
+     sed -i 's/system-db/#system-db/g' /etc/dconf/profile/gdm
+     sed -i 's/file-db/#file-db/g' /etc/dconf/profile/gdm
+     sed -i 's/banner-message/#banner-message/g' /etc/dconf/db/gdm.d/01-banner-message
+     echo "user-db:user" >> /etc/dconf/profile/gdm
+     echo "system-db:gdm" >> /etc/dconf/profile/gdm
+     echo "file-db:/usr/share/gdm/greeter-dconf-defaults" >> /etc/dconf/profile/gdm
+     echo "banner-message-enable=true" >> /etc/dconf/db/gdm.d/01-banner-message
+     echo "banner-message-text='Authorized uses only. All activity may be monitored and reported.'" >> /etc/dconf/db/gdm.d/01-banner-message
+     echo -e "\t\t\t[*] Done"
+     echo -e "\t\t[*] Updating dconf"
+     dconf update; echo -e "\t\t\t[*] Done"
+else
+     echo -e "\t\t[-] Dconf is not installed"
+fi
+
+echo "[+] 1.8 Ensure updates, patches, and additional security software are installed (Not Scored)"
+apt-get -s upgrade -y &> /dev/null; echo -e "\t[*] Done"
+
+echo "[+][+] 2.1 inetd Services [+][+]"
+echo -e "\t[+] 2.1.1 Ensure chargen services are not enabled (Scored)"
+dpkg -s xinetd &> /dev/null 
+if [ $? -ne 1 ]; then
+     cat /etc/xinetd.d/* | grep "#service chargen" &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[-] chargen already disabled"
+     else
+          echo -e "\t\t[*] Disabling chargen services"
+          sed -i 's/chargen/#chargen/g' /etc/xinetd.conf
+          find /etc/xinetd.d -type f -exec sed -i "s/service chargen/#service chargen/g" {} \;
+          sed -i '1,26 s/^/#/' /etc/xinetd.d/chargen
+          echo -e "\t\t\t[*] Done"
+     fi
+else
+     echo -e "\t\t[-] inetd or xinetd is not installed yet"
+fi
+
+echo -e "\t[+] 2.1.2 Ensure daytime services are not enabled (Scored)"
+dpkg -s xinetd &> /dev/null
+if [ $? -ne 1 ]; then
+     cat /etc/xinetd.d/* | grep "#service daytime" &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[-] daytime services already disabled"
+     else
+          echo -e "\t\t[*] Disabling daytime services"
+          sed -i 's/daytime/#daytime/g' /etc/xinetd.conf
+          find /etc/xinetd.d -type f -exec sed -i "s/service daytime/#service daytime/g" {} \;
+          sed -i '1,26 s/^/#/' /etc/xinetd.d/daytime
+          echo -e "\t\t\t[*] Done"
+     fi
+else
+     echo -e "\t\t[-] inetd or xinetd is not installed yet"
+fi
+
+echo -e "\t[+] 2.1.3 Ensure discard services are not enabled (Scored)"
+dpkg -s xinetd &> /dev/null
+if [ $? -ne 1 ]; then
+     cat /etc/xinetd.d/* | grep "#service discard" &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[-] discard services already disabled"
+     else
+          echo -e "\t\t[*] Disabling discard services"
+          sed -i 's/discard/#discard/g' /etc/xinetd.conf
+          find /etc/xinetd.d -type f -exec sed -i "s/service daytime/#service daytime/g" {} \;
+          sed -i '1,26 s/^/#/' /etc/xinetd.d/discard
+          echo -e "\t\t\t[*] Done"
+     fi
+else
+     echo -e "\t\t[-] inetd or xinetd is not installed yet"
+fi
+
+echo -e "\t[+] 2.1.4 Ensure echo services are not enabled (Scored)"
+dpkg -s xinetd &> /dev/null
+if [ $? -ne 1 ]; then
+     cat /etc/xinetd.d/* | grep "#service echo" &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[-] echo services already disabled"
+     else
+          echo -e "\t\t[*] Disabling echo services"
+          sed -i 's/echo/#echo/g' /etc/xinetd.conf
+          find /etc/xinetd.d -type f -exec sed -i "s/service echo/#service echo/g" {} \;
+          sed -i '1,26 s/^/#/' /etc/xinetd.d/echo
+          echo -e "\t\t\t[*] Done"
+     fi
+else
+     echo -e "\t\t[-] inetd or xinetd is not installed yet"
+fi
+
+echo -e "\t[+] 2.1.5 Ensure time services are not enabled (Scored)"
+dpkg -s xinetd &> /dev/null
+if [ $? -ne 1 ]; then
+     cat /etc/xinetd.d/* | grep "#service time" &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[-] time services already disabled"
+     else
+          echo -e "\t\t[*] Disabling time servies"
+          sed -i 's/time/#time/g' /etc/xinetd.conf
+          find /etc/xinetd.d -type f -exec sed -i "s/service time/#service time/g" {} \;
+          sed -i '1,26 s/^/#/' /etc/xinetd.d/time
+          echo -e "\t\t\t[*] Done"
+     fi
+else
+     echo -e "\t\t[-] inetd or xinetd is not installed yet"
+fi
+
+echo -e "\t[+] 2.1.6 Ensure rsh server is not enabled (Scored)"
+cat /etc/xinetd.d/* | grep "shell" &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[*] Disabling shell on inet or xinet"
+     find /etc/xinetd.d -type f -exec sed -i "/s/shell/#shell/g" {} \;
+     echo -e "\t\t\t[*] Done"
+else
+     echo -e "\t\t[-] shell on inet or xinet is not found"
+fi
+
+cat /etc/xinetd.d/* | grep "login" &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[*] Disabling login on inet or xinet"
+     find /etc/xinetd.d -type f -exec sed -i "/s/login/#login/g" {} \;
+     echo -e "\t\t\t[*] Done"
+else
+
+     echo -e "\t\t[-] login on inet or xinet is not found"
+fi
+
+cat /etc/xinetd.d/* | grep "exec" &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[*] Disabling exec on inet or xinet"
+     find /etc/xinetd.d -type f -exec sed -i "/s/exec/#exec/g" {} \;
+     echo -e "\t\t\t\[*] Done"
+else
+     echo -e "\t\t[-] exec on inet or xinet is not found"
+fi
+
+echo -e "\t[+] 2.1.7 Ensure talk server is not enabled (Scored)"
+cat /etc/xinetd.d/* | grep talk &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[*] Disabling talk on inet or xinet"
+     find /etc/xinetd.d -type f -exec sed -i "/s/talk/#talk/g" {} \;
+     #apt-get remove talk -y &> /dev/null
+     echo -e "\t\t\t[*] Done"
+else
+     echo -e "\t\t[-] talk on inet or xinet is not found"
+fi
+
+cat /etc/xinetd.d/* | grep ntalk &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[*] Disabling ntalk on inet or xinet"
+     find /etc/xinetd.d -type f -exec sed -i "/s/ntalk/#ntalk/g" {} \;
+     #apt-get remove ntalk -y &> /dev/null
+     echo -e "\t\t\t[*] Done"
+else
+     echo -e "\t\t[-] ntalk on inet or xinet is not found"
+fi
+
+echo -e "\t[+] 2.1.8 Ensure telnet server is not enabled (Scored)"
+cat /etc/xinetd.d/* | grep telnet &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[*] Disabling telnet on inet or xinet"
+     find /etc/xinetd.d -type f -exec sed -i "/s/telnet/#telnet/g" {} \;
+     echo -e "\t\t\t[*] Done"
+else
+     echo -e "\t\t[-] telnet on inet or xinet is not found"
+fi
+
+echo -e "\t[+] 2.1.9 Ensure tftp server is not enabled (Scored)"
+cat /etc/xinetd.d/* | grep tftp &> /dev/null
+if [ $? -ne  1 ]; then
+     echo -e "\t\t[*] Disabling telnet on inet or xinet"
+     find /etc/xinetd.d -type f -exec sed -i "/s/tftp/#tftp/g" {} \;
+     echo -e "\t\t\t[*] Done"
+else
+     echo -e "\t\t[-] tftp on inet or xinet is not found"
+fi
+
+echo -e "\t[+] 2.1.10 Ensure xinetd is not enabled (Scored)"
+systemctl is-enabled xinetd &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[+] xinetd is enabled so it will disabled now"
+     echo -e "\t\t[*] Disabled xinetd"
+     systemctl disable xinetd &> /dev/null; echo -e "\t\t\t[*] Done"
+else
+     echo -e "\t\t[-] xinetd is already disabled"
+fi 
