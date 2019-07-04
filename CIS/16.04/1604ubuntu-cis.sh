@@ -487,3 +487,18 @@ else
 fi
 
 echo -e "\t[+] 2.1.3 Ensure discard services are not enabled (Scored)"
+dpkg -s xinetd &> /dev/null
+if [ $? -ne 1 ]; then
+     cat /etc/xinetd.d/* | grep "#service discard" &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[-] discard services already disabled"
+     else
+          echo -e "\t\t[*] Disabling discard services"
+          sed -i 's/discard/#discard/g' /etc/xinetd.conf
+          find /etc/xinetd.d -type f -exec sed -i "s/service daytime/#service daytime/g" {} \;
+          sed -i '1,26 s/^/#/' /etc/xinetd.d/discard
+          echo -e "\t\t\t[*] Done"
+     fi
+else
+     echo -e "\t\t[-] inetd or xinetd is not installed yet"
+fi
