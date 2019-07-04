@@ -604,4 +604,14 @@ else
      echo -e "\t\t[-] telnet on inet or xinet is not found"
 fi
 
+echo -e "\t[+] 2.1.9 Ensure tftp server is not enabled (Scored)"
+cat /etc/xinetd.d/* | grep tftp &> /dev/null
+if [ $? -ne  1 ]; then
+     echo -e "\t\t[*] Disabling telnet on inet or xinet"
+     find /etc/xinetd.d -type f -exec sed -i "/s/tftp/#tftp/g" {} \;
+     echo -e "\t\t\t[*] Done"
+else
+     echo -e "\t\t[-] tftp on inet or xinet is not found"
+fi
+
 
