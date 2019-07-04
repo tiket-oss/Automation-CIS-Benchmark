@@ -675,3 +675,85 @@ else
      echo -e "\t\t\t[-] ntp.conf already configured"
 fi
 
+echo -e "\t\t[+] 2.2.1.3 Ensure chrony is configured (Scored)"
+grep "^server" /etc/chrony/chrony.conf &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t\t[-] chrony is already configured"
+else
+     echo -e '\t\t\t[*] Please configure "server" on /etc/chrony/chrony.conf'
+fi
+
+echo -e "\t[+] 2.2.2 Ensure X Windows System is not installed (Scored)"
+dpkg -l xserver-xorg* &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[+] X Windows System is installed, so it will removed"
+     echo -e "\t\t[*] Removing package"
+     apt-get remove xserver-xorg* -y &> /dev/null
+     echo -e "\t\t\t[*] Done"
+else
+     echo -e "\t\t[-] X Windows System is not installed on this server"
+fi
+
+echo -e "\t[+] 2.2.3 Ensure Avahi Server is not enabled (Scored)"
+dpkg -s avahi-daemon &> /dev/null
+if [ $? -ne 1 ]; then
+     systemctl is-enabled avahi-daemon &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[+] Avahi daemon is enable, so it will disabled"
+          echo -e "\t\t\t[*] Disabling avahi daemon"
+          systemctl disable avahi-daemon &> /dev/null
+          echo -e "\t\t\t\t[*] Done"
+     else
+          echo -e "\t\t[-] Avahi daemon is already disabled"
+     fi
+else
+     echo -e "\t\t[-] Avahi daemon is not installed"
+fi
+
+echo -e "\t[+] 2.2.4 Ensure CUPS is not enabled (Scored)"
+dpkg -s cups &> /dev/null
+if [ $? -ne 1 ]; then
+     systemctl is-enabled cups &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[+] CUPS is enable, so it will disabled"
+          echo -e "\t\t\t[*] Disabling CUPS"
+          systemctl disable cups &> /dev/null
+          echo -e "\t\t\t\t[*] Done"
+     else
+          echo -e "\t\t[-] CUPS is alreadu disabled"
+     fi
+else
+     echo -e "\t\t[-] CUPS is not installed"
+fi
+
+echo -e "\t[+] 2.2.5 Ensure DHCP Server is not enabled (Scored)"
+dpkg -s isc-dhcp-server &> /dev/null
+if [ $? -ne 1 ]; then
+     systemctl is-enabled isc-dhcp-server &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[+] DHCP Server is enable, so it will disabled"
+          echo -e "\t\t\t[*] Disabling DHCP Server"
+          systemctl disable isc-dhcp-server &> /dev/null
+          echo -e "\t\t\t\t[*] Done"
+     else
+          echo -e "\t\t[-] DHCP Server is already disabled"
+     fi
+else
+     echo -e "\t\t[-] DHCP Server is not installed"
+fi
+
+echo -e "\t[+] 2.2.6 Ensure LDAP server is not enabled (Scored)"
+dpkg -s slapd &> /dev/null
+if [ $? -ne 1 ]; then
+     systemctl is-enabled slapd &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[+] LDAP Server is enable, so it will disabled"
+          echo -e "\t\t\t[*] Disabling LDAP Server"
+          systemctl disable slapd &> /dev/null
+          echo -e "\t\t\t\t[*] Done"
+     else
+          echo -e "\t\t[-] LDAP Server is already disabled"
+     fi
+else
+     echo -e "\t\t[-] LDAP Server is not installed"
+fi
