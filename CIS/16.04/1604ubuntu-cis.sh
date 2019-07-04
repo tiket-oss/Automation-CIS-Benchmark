@@ -614,4 +614,12 @@ else
      echo -e "\t\t[-] tftp on inet or xinet is not found"
 fi
 
-
+echo -e "\t[+] 2.1.10 Ensure xinetd is not enabled (Scored)"
+systemctl is-enabled xinetd &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[+] xinetd is enabled so it will disabled now"
+     echo -e "\t\t[*] Disabled xinetd"
+     systemctl disable xinetd &> /dev/null; echo -e "\t\t\t[*] Done"
+else
+     echo -e "\t\t[-] xinetd is already disabled"
+fi 
