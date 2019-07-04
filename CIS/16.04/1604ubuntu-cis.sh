@@ -572,4 +572,23 @@ else
      echo -e "\t\t[-] exec on inet or xinet is not found"
 fi
 
+echo -e "\t[+] 2.1.7 Ensure talk server is not enabled (Scored)"
+cat /etc/xinetd.d/* | grep talk &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[*] Disabling talk on inet or xinet"
+     find /etc/xinetd.d -type f -exec sed -i "/s/talk/#talk/g" {} \;
+     echo -e "\t\t\t[*] Done"
+else
+     echo -e "\t\t[-] talk on inet or xinet is not found"
+fi
+
+cat /etc/xinetd.d/* | grep ntalk &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[*] Disabling ntalk on inet or xinet"
+     find /etc/xinetd.d -type f -exec sed -i "/s/ntalk/#ntalk/g" {} \;
+     echo -e "\t\t\t[*] Done"
+else
+     echo -e "\t\t[-] ntalk on inet or xinet is not found"
+fi
+
 
