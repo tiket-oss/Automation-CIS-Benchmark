@@ -502,3 +502,22 @@ if [ $? -ne 1 ]; then
 else
      echo -e "\t\t[-] inetd or xinetd is not installed yet"
 fi
+
+echo -e "\t[+] 2.1.4 Ensure echo services are not enabled (Scored)"
+dpkg -s xinetd &> /dev/null
+if [ $? -ne 1 ]; then
+     cat /etc/xinetd.d/* | grep "#service echo" &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[-] echo services already disabled"
+     else
+          echo -e "\t\t[*] Disabling echo services"
+          sed -i 's/echo/#echo/g' /etc/xinetd.conf
+          find /etc/xinetd.d -type f -exec sed -i "s/service echo/#service echo/g" {} \;
+          sed -i '1,26 s/^/#/' /etc/xinetd.d/echo
+          echo -e "\t\t\t[*] Done"
+     fi
+else
+     echo -e "\t\t[-] inetd or xinetd is not installed yet"
+fi
+
+
