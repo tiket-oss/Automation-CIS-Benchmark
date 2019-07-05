@@ -622,4 +622,138 @@ if [ $? -ne 1 ]; then
      systemctl disable xinetd &> /dev/null; echo -e "\t\t\t[*] Done"
 else
      echo -e "\t\t[-] xinetd is already disabled"
-fi 
+fi
+
+echo "[+][+] 2.2 Special Purpose Services [+][+]"
+echo -e "\t[+] 2.2.1 Time Synchronization"
+echo -e "\t\t[+] 2.2.1.1 Ensure time synchronization is in use (Not Scored)"
+dpkg -s ntp &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t\t[-] Ntp is already installed"
+else
+     echo -e "\t\t\t[+] Ntp is not installed yet, so it will be install now"
+     echo -e "\t\t\t[*] Installing Ntp"
+     apt-get install ntp -y &> /dev/null
+     echo -e "\t\t\t\t[*] Done"
+fi
+
+dpkg -s chrony &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t\t[-] Chrony is already installed"
+else
+     echo -e "\t\t\t[+] Ntp is not installed yet, so it will be install now"
+     echo -e "\t\t\t[*] Installing Chrony"
+     apt-get install chrony -y &> /dev/null
+     echo -e "\t\t\t\t[*] Done"
+fi
+
+echo -e "\t\t[+] 2.2.1.2 Ensure ntp is configured (Scored)"
+#grep "^restrict" /etc//ntp.conf
+grep "restrict -4" /etc/ntp.conf &> /dev/null && grep "restrict -6" /etc/ntp.conf &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t\t[*] Configuring ntp.conf"
+     #sed -i "s/restrict -4/#restrict -4/g" /etc/ntp.conf
+     #sed -i "s/restrict -6/#restrict -6/g" /etc/ntp.conf
+     #echo "restrict -4 default kod nomodify notrap nopeer noquery" >> /etc/ntp.conf
+     #echo "restrict -6 default kod nomodify notrap nopeer noquery" >> /etc/ntp.conf
+     grep "restrict -4 default kod nomodify notrap nopeer noquery" /etc/ntp.conf &> /dev/null && grep "restrict -6 default kod nomodify notrap nopeer noquery" /etc/ntp.conf &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t\t[-] restrict already configured"
+     else
+          sed -i "s/restrict -4 default kod notrap nomodify nopeer noquery limited/restrict -4 default kod nomodify notrap nopeer noquery/g" /etc/ntp.conf &> /dev/null
+          sed -i "s/restrict -6 default kod notrap nomodify nopeer noquery limited/restrict -6 default kod nomodify notrap nopeer noquery/g" /etc/ntp.conf &> /dev/null
+     fi
+     grep "RUNASUSER=ntp" /etc/ntp.conf &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t\t[-] Runuser already configured as ntp"
+     else
+          sed -i "s/RUNASUSER=/#RUNASUSER=/g" /etc/ntp.conf
+          echo "RUNASUSER=ntp" >> /etc/ntp.conf
+     fi
+     echo -e "\t\t\t\t[*] Done"
+else
+     echo -e "\t\t\t[-] ntp.conf already configured"
+fi
+
+echo -e "\t\t[+] 2.2.1.3 Ensure chrony is configured (Scored)"
+grep "^server" /etc/chrony/chrony.conf &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t\t[-] chrony is already configured"
+else
+     echo -e '\t\t\t[*] Please configure "server" on /etc/chrony/chrony.conf'
+fi
+
+echo -e "\t[+] 2.2.2 Ensure X Windows System is not installed (Scored)"
+dpkg -l xserver-xorg* &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[+] X Windows System is installed, so it will removed"
+     echo -e "\t\t[*] Removing package"
+     apt-get remove xserver-xorg* -y &> /dev/null
+     echo -e "\t\t\t[*] Done"
+else
+     echo -e "\t\t[-] X Windows System is not installed on this server"
+fi
+
+echo -e "\t[+] 2.2.3 Ensure Avahi Server is not enabled (Scored)"
+dpkg -s avahi-daemon &> /dev/null
+if [ $? -ne 1 ]; then
+     systemctl is-enabled avahi-daemon &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[+] Avahi daemon is enable, so it will disabled"
+          echo -e "\t\t\t[*] Disabling avahi daemon"
+          systemctl disable avahi-daemon &> /dev/null
+          echo -e "\t\t\t\t[*] Done"
+     else
+          echo -e "\t\t[-] Avahi daemon is already disabled"
+     fi
+else
+     echo -e "\t\t[-] Avahi daemon is not installed"
+fi
+
+echo -e "\t[+] 2.2.4 Ensure CUPS is not enabled (Scored)"
+dpkg -s cups &> /dev/null
+if [ $? -ne 1 ]; then
+     systemctl is-enabled cups &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[+] CUPS is enable, so it will disabled"
+          echo -e "\t\t\t[*] Disabling CUPS"
+          systemctl disable cups &> /dev/null
+          echo -e "\t\t\t\t[*] Done"
+     else
+          echo -e "\t\t[-] CUPS is alreadu disabled"
+     fi
+else
+     echo -e "\t\t[-] CUPS is not installed"
+fi
+
+echo -e "\t[+] 2.2.5 Ensure DHCP Server is not enabled (Scored)"
+dpkg -s isc-dhcp-server &> /dev/null
+if [ $? -ne 1 ]; then
+     systemctl is-enabled isc-dhcp-server &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[+] DHCP Server is enable, so it will disabled"
+          echo -e "\t\t\t[*] Disabling DHCP Server"
+          systemctl disable isc-dhcp-server &> /dev/null
+          echo -e "\t\t\t\t[*] Done"
+     else
+          echo -e "\t\t[-] DHCP Server is already disabled"
+     fi
+else
+     echo -e "\t\t[-] DHCP Server is not installed"
+fi
+
+echo -e "\t[+] 2.2.6 Ensure LDAP server is not enabled (Scored)"
+dpkg -s slapd &> /dev/null
+if [ $? -ne 1 ]; then
+     systemctl is-enabled slapd &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[+] LDAP Server is enable, so it will disabled"
+          echo -e "\t\t\t[*] Disabling LDAP Server"
+          systemctl disable slapd &> /dev/null
+          echo -e "\t\t\t\t[*] Done"
+     else
+          echo -e "\t\t[-] LDAP Server is already disabled"
+     fi
+else
+     echo -e "\t\t[-] LDAP Server is not installed"
+fi
