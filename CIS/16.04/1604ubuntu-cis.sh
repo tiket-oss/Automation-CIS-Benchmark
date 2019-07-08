@@ -757,3 +757,243 @@ if [ $? -ne 1 ]; then
 else
      echo -e "\t\t[-] LDAP Server is not installed"
 fi
+
+echo -e "\t[+] 2.2.7 Ensure NFS and RPC are not enabled (Scored)"
+dpkg -s nfs-kernel-server &> /dev/null
+if [ $? -ne 1 ]; then
+     systemctl is-enabled nfs-kernel-server &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[+] nfs-kernel-server is enabled, so it will disabled"
+          echo -e "\t\t[*] Disabling nfs-kernel-server"
+          systemctl disable nfs-kernel-server &> /dev/null
+          echo -e "\t\t\t[*] Done"
+     else
+          echo -e "\t\t[-] nfs-kernel-server is already disabled"
+     fi
+else
+     echo -e "\t\t[-] nfs-kernel-server is not installed"
+fi
+
+dpkg -s rpcbind &> /dev/null
+if [ $? -ne 1 ]; then
+     systemctl is-enabled rpcbind &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[+] rpcbind is enabled, so it will disabled"
+          echo -e "\t\t[*] Disabling rpcbind"
+          service rpcbind stop &> /dev/null
+          systemctl disable rpcbind &> /dev/null
+          echo -e "\t\t\t[*] Done"
+     else
+          echo -e "\t\t[-] rpcbind is already disabled"
+     fi
+else
+     echo -e "\t\t[-] rpcbind is not installed"
+fi
+
+
+echo -e "\t[+] 2.2.8 Ensure DNS Server is not enabled (Scored)"
+dpkg -s bind9 &> /dev/null
+if [ $? -ne 1 ]; then
+     systemctl is-enabled bind9 &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[+] bind9 is enabled, so it will disabled"
+          echo -e "\t\t[*] Disabling bind9"
+          systemctl disable bind9 &> /dev/null
+          echo -e "\t\t\t[*] Done"
+    else
+          echo -e "\t\t[-] bind9 is already disabled"
+    fi
+else
+    echo -e "\t\t[-] bind9 is not installed"
+fi
+
+echo -e "\t[+] 2.2.9 Ensure FTP Server is not enabled (Scored)"
+dpkg -s vsftpd &> /dev/null
+if [ $? -ne 1 ]; then
+     systemctl is-enabled vsftpd &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[+] vsftpd is enabled, so it will disabled"
+          echo -e "\t\t[*] Disabling vsftpd"
+          systemctl disable vsftpd &> /dev/null
+          echo -e "\t\t\t[*] Done"
+     else
+          echo -e "\t\t[-] vsftpd is already disabled"
+     fi
+else
+     echo -e "\t\t[-] vsftpd is not installed"
+fi
+
+echo -e "\t[+] 2.2.10 Ensure HTTP server is not enabled (Scored)"
+dpkg -s apache2 &> /dev/null
+if [ $? -ne 1 ]; then
+     systemctl is-enabled apache2 &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[+] apache2 is enabled, so it will disabled"
+          echo -e "\t\t[*] Disabling apache2"
+          systemctl disable apache2 &> /dev/null
+          echo -e "\t\t\t[*] Done"
+     else
+          echo -e "\t\t[-] apache2 is already disabled"
+     fi
+else
+     echo -e "\t\t[-] apache2 is not installed"
+fi
+
+echo -e "\t[+] 2.2.11 Ensure IMAP and POP3 server is not enabled (Scored)"
+dpkg -s dovecot &> /dev/null
+if [ $? -ne 1 ]; then
+     systemctl is-enabled dovecot &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[+] dovecot is enabled, so it will disabled"
+          echo -e "\t\t[*] Disabling dovecot"
+          systemctl disable dovecot &> /dev/null
+          echo -e "\t\t\t[*] Done"
+     else
+          echo -e "\t\t[-] dovecot is already disabled"
+     fi
+else
+     echo -e "\t\t[-] dovecot is not installed"
+fi
+
+echo -e "\t[+] 2.2.12 Ensure Samba is not enabled (Scored)"
+dpkg -s samba &> /dev/null
+if [ $? -ne 1 ]; then
+     systemctl is-enabled smbd &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[+] samba is enabled, so it will disabled"
+          echo -e "\t\t[*] Disabling samba"
+          systemctl disable smbd &> /dev/null
+          echo -e "\t\t\t[*] Done"
+     else
+          echo -e "\t\t[-] samba is already disabled"
+     fi
+else
+     echo -e "\t\t[-] samba is not installed"
+fi
+ 
+echo -e "\t[+] 2.2.13 Ensure HTTP Proxy Server is not enabled (Scored)"
+dpkg -s squid &> /dev/null
+if [ $? -ne 1 ]; then
+     systemctl is-enabled squid &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[+] squid is enabled, so it will disabled"
+          echo -e "\t\t[*] Disabling squid"
+          systemctl disable squid &> /dev/null
+          echo -e "\t\t\t[*] Done"
+     else
+          echo -e "\t\t[-] squid is already disabled"
+     fi
+else
+     echo -e "\t\t[-] squid is not installed"
+fi
+
+echo -e "\t[+] 2.2.14 Ensure SNMP Server is not enabled (Scored)"
+dpkg -s snmpd &> /dev/null
+if [ $? -ne 1 ]; then
+     systemctl is-enabled snmpd &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[+] snmpd is enabled, so it will disabled"
+          echo -e "\t\t[*] Disabling snmpd"
+          systemctl disable snmpd &> /dev/null
+          echo -e "\t\t\t[*] Done"
+     else
+          echo -e "\t\t[-] snmpd is already disabled"
+     fi
+else
+     echo -e "\t\t[-] snmpd is not installed"
+fi
+
+echo -e "\t[+] 2.2.15 Ensure mail transfer agent is configured for local-only mode (Scored)"
+dpkg -s postfix &> /dev/null
+if [ $? -ne 1 ]; then
+     grep "inet_interfaces = localhost" /etc/postfix/main.cf &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[-] It's already configured"
+     else
+          echo -e "\t\t[+] Adding inet_interfaces on /etc/postfix/main.cf"
+          echo -e "\t\t\t[*] Configuring"
+          echo "inet_interfaces = localhost" >> /etc/postfix/main.cf
+          echo -e "\t\t\t\t[*] Done"
+          echo -e "\t\t[+] Restarting postfix service"
+          service postfix restart &> /dev/null
+          echo -e "\t\t\t[*] Done"
+    fi
+else
+     echo -e "\t\t[-] postfix is not installed"
+fi
+
+echo -e "\t[+] 2.2.16 Ensure rsync service is not enabled (Scored)"
+dpkg -s rsync &> /dev/null
+if [ $? -ne 1 ]; then
+     systemctl is-enabled rsync &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[+] rsync is enabled, so it will disabled"
+          echo -e "\t\t[*] Disabling rsync"
+          systemctl disable rsync &> /dev/null
+          echo -e "\t\t\t[*] Done"
+     else
+          echo -e "\t\t[-] rsync is already disabled"
+     fi
+else
+     echo -e "\t\t[-] rsync is not installed"
+fi
+
+echo -e "\t[+] 2.2.17 Ensure NIS Server is not enabled (Scored)"
+dpkg -s nis &> /dev/null
+if [ $? -ne 1 ]; then
+     systemctl is-enabled nis &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[+] nis is enabled, so it will disabled"
+          echo -e "\t\t[*] Disabling nis"
+          systemctl disable nis &> /dev/null
+          echo -e "\t\t\t[*] Done"
+     else
+          echo -e "\t\t[-] nis is already disabled"
+     fi
+else
+     echo -e "\t\t[-] nis is not installed"
+fi
+
+echo "[+][+] 2.3 Service Clients [+][+]"
+echo -e "\t[+] 2.3.1 Ensure NIS Client is not installed (Scored)"
+dpkg -s nis &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[+] NIS client is installed, so it will removed"
+     echo -e "\t\t[*] Removing nis"
+     apt-get remove nis -y &> /dev/null
+     echo -e "\t\t\t[*] Done"
+else
+     echo -e "\t\t[-] nis client is not installed"
+fi
+
+echo -e "\t[+] 2.3.2 Ensure rsh client is not installed (Scored)"
+dpkg -s rsh-client &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[+] rsh-client is installed, so it will removed"
+     echo -e "\t\t[*] Removing rsh-client"
+     apt-get remove rsh-client -y &> /dev/null
+     echo -e "\t\t\t[*] Done"
+else
+     echo -e "\t\t[-] rsh-client is not installed"
+fi
+
+dpkg -s rsh-redone-client &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[+] rsh-redone-client is installed, so it will removed"
+     echo -e "\t\t[*] Removing rsh-redone-client"
+     apt-get remove rsh-redone-client -y &> /dev/null
+     echo -e "\t\t\t[*] Done"
+else
+     echo -e "\t\t[-] rsh-redone-client is not installed"
+fi
+
+echo -e "\t[+] 2.3.3 Ensure talk client is not installed (Scored)"
+dpkg -s talk &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[+] talk is installed, so it will removed"
+     echo -e "\t\t[*] Removing talk"
+     apt-get remove talk -y &> /dev/null
+     echo -e "\t\t\t[*] Done"
+else
+     echo -e "\t\t[-] talk is not installed"
+fi
