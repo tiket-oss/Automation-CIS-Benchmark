@@ -1512,7 +1512,7 @@ if [ $? -ne 1 ]; then
      echo -e "\t\t[3] 3.6.4 Ensure outbound and established connections are configured (Not Scored)"
      echo -e "\t\t[4] 3.6.5 Ensure firewall rules exist for all open ports (Scored)"
 else
-     echo -e "\t[+] Requirements above will execute with iptables script"
+     echo -e "\t[+] Requirements below will execute with iptables script"
      echo -e "\t\t[1] 3.6.2 Ensure default deny firewall policy (Scored)"
      echo -e "\t\t[2] 3.6.3 Ensure loopback traffic is configured (Scored)"
      echo -e "\t\t[3] 3..6.4 Ensure outbound and established connections are configured (Not Scored)"
@@ -1521,3 +1521,78 @@ else
      sh templates/iptables-CIS.sh &> /dev/null; echo -e "\t\t\t\t[*] Done"
 fi
 
+echo "[+][+] 3.7 Ensure wireless interfaces are disabled (Not Scored) [+][+]"
+echo -e "\t[+] Please disable wireless interfaces on the system"
+
+echo "[+][+] 4 Logging and Auditing [+][+]"
+echo -e "\t[+] 4.1 Configure System Accounting (auditd)"
+dpkg -s auditd &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[+] auditd is installed so it will reload"
+     echo -e "\t\t[*] Reload auditd"
+     service auditd reload &> /dev/null; echo -e "\t\t\t[*] Done"
+else
+     echo -e "\t\t[-] auditd is not installed so it will installed"
+     echo -e "\t\t[*] Installing auditd"
+     apt-get install -y auditd &> /dev/null; echo -e "\t\t\t\[*] Done"
+fi
+echo -e "\t\t[+] 4.1.1 Configure Data Retention"
+echo -e "\t\t\t[+] Requirements below will execute with auditd-CIS.conf script"
+echo -e "\t\t\t\t[1] 4.1.1.1 Ensure audit log storage size is configured (Not Scored)"
+echo -e "\t\t\t\t[2] 4.1.1.2 Ensure system is disabled when audit logs are full (Scored)"
+echo -e "\t\t\t\t[3] Ensure audit logs are not automatically deleted (Scored)"
+echo -e "\t\t\t\t\t[*] Executing script"
+cp templates/auditd-CIS.conf /etc/audit/auditd.conf; echo -e "\t\t\t\t\t\t[*] Done"
+
+echo -e "\t\t[+] 4.1.2 Ensure auditd service is enabled (Scored)"
+systemctl is-enabled auditd &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t\t[+] auditd is already enabled"
+else
+     echo -e "\t\t\t[-] auditd is disabled, so it will enabled"
+     echo -e "\t\t\t[*] Enabling auditd service"
+     systemctl enable auditd &> /dev/null
+     echo -e "\t\t\t\t[*] Done"
+fi
+
+echo -e "\t\t[+] 4.1.3 Ensure auditing for processes that start prior to auditd is enabled (Scored)"
+cat /etc/default/grub | grep "audit=1" /etc/default/grub &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t\t[+] auditd is already exists on default grub"
+else
+     echo -e "\t\t\t[-] auditd is not exists on default grub, so it will added"
+     echo -e "\t\t\t[*] Processing"
+     echo 'GRUB_CMDLINE_LINUX="audit=1"' >> /etc/default/grub
+     echo -e "\t\t\t\t[*] Done"
+     echo -e "\t\t\t[*] Updating grub"
+     update-grub &> /dev/null; echo -e "\t\t\t\t[*] Done"
+fi
+
+echo -e "\t\t[+] Requirements below will execute with audit.rules"
+echo -e "\t\t\t[1] 4.1.4 Ensure events that modify date and time information are collected (Scored)"
+echo -e "\t\t\t[2] 4.1.5 Ensure events that modify user/group information are collected (Scored)"
+echo -e "\t\t\t[3] 4.1.6 Ensure events that modify system's network environment are collected (Scored)"
+echo -e "\t\t\t[4] 4.1.7 Ensure events that modify system's Mandatory Access Controls are collected (Scored)"
+echo -e "\t\t\t[5] 4.1.8 Ensure login and logout events are collected (Scored)"
+echo -e "\t\t\t[6] 4.1.9 Ensure session intiation information is collected (Scored)"
+echo -e "\t\t\t[7] 4.1.10 Ensure disretionary access control permission modification events are collected (Scored)"
+echo -e "\t\t\t[8] 4.1.11 Ensure unsuccessful unauthorized file access attempts are collected (Scored)"
+echo -e "\t\t\t[9] 4.1.12 Ensure use of privileged commands is collected (Scored)"
+echo -e "\t\t\t[10] 4.1.13 Ensure successful file system mounts are collected (Scored)"
+echo -e "\t\t\t[11] 4.1.14 Ensure file deletion events by users are collected (Scored)"
+echo -e "\t\t\t[12] 4.1.15 Ensure changes to system administration scope (sudoers) is collected (Scored)"
+echo -e "\t\t\t[13] 4.1.16 Ensure system administrator actions (sudolog) are collected (Scored)"
+echo -e "\t\t\t[14] 4.1.17 Ensure kernel module loading and unloading is collected (Scored)"
+echo -e "\t\t\t[15] 4.1.18 Ensure the audit configuration is immutable (Scored)"
+echo -e "\t\t\t\t[*] Executing script"
+cp templates/audit-CIS.rules /etc/audit/audit.rules
+
+find / -xdev \( -perm -4000 -o -perm -2000 \) -type f | awk '{print \
+"-a always,exit -F path=" $1 " -F perm=x -F auid>=1000 -F auid!=4294967295 \
+-k privileged" } ' >> /etc/audit/audit.rules
+
+echo " " >> /etc/audit/audit.rules
+echo "#End of Audit Rules" >> /etc/audit/audit.rules
+echo "-e 2" >> /etc/audit/audit.rules
+
+cp /etc/audit/audit.rules /etc/audit/rules.d/audit.rules; echo -e "\t\t\t\t\t[*] Done"
