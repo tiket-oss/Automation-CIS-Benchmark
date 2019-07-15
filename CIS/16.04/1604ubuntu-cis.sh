@@ -1596,3 +1596,206 @@ echo "#End of Audit Rules" >> /etc/audit/audit.rules
 echo "-e 2" >> /etc/audit/audit.rules
 
 cp /etc/audit/audit.rules /etc/audit/rules.d/audit.rules; echo -e "\t\t\t\t\t[*] Done"
+
+echo -e "\t[+] 4.2 Configure Logging"
+echo -e "\t\t[+] 4.2.1 Configure rsyslog"
+echo -e "\t\t\t[+] 4.2.1.1 Ensure rsyslog Service is enabled (Scored)"
+systemctl is-enabled rsyslog &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t\t\t[+] rsyslog is already enabled"
+else
+     echo -e "\t\t\t\t[-] rsyslog is disabled, so it will enabled"
+     echo -e "\t\t\t\t\t[*] Enabling rsyslog"
+     systemctl enable rsyslog &> /dev/null; echo -e "\t\t\t\t\t\t[*] Done"
+fi
+
+echo -e "\t\t\t[+] 4.2.1.2 Ensure logging is configured (Not Scored)"
+echo -e "\t\t\t\t[*] Restarting rsyslog"
+pkill -HUP rsyslogd &> /dev/null; echo -e "\t\t\t\t\t[*] Done"
+
+echo -e "\t\t\t[+] 4.2.1.3 Ensure rsyslog default file permissions configured (Scored)"
+grep "^\$FileCreateMode 0640" /etc/rsyslog.conf &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t\t\t[+] default file permissions is already configured"
+else
+     echo -e "\t\t\t\t[-] default file permissions is not configured, so it will configured"
+     echo -e "\t\t\t\t\t[*] Configure rsyslog.conf"
+     sed -i 's/$FileCreateMode/#FileCreateMode/g' /etc/rsyslog.conf
+     echo "$FileCreateMode 0640" >> /etc/rsyslog.conf
+     echo -e "\t\t\t\t\t\t[*] Done"
+fi
+echo -e "\t\t\t[+] 4.2.1.4 Ensure rsyslog is configured to send logs to a remote log host (Scored)"
+echo -e "\t\t\t\t[-] This requirements not available to automate, please configure manually"
+
+echo -e "\t\t\t[+] 4.1.2.5 Ensure remote rsyslog messages are only accepted on designated log hosts (Not Scored)"
+echo -e "\t\t\t\t[-] This hosts are not designated as log hosts so it will skipped"
+
+echo -e "\t\t[+] 4.2.2 Configure syslog-ng"
+echo -e "\t\t\t[+] 4.2.2.1 Ensure syslog-ng service is enabled (Scored)"
+dpkg -s syslog-ng &> /dev/null
+if [ $? -ne 1 ]; then
+     systemctl is-enabled syslog-ng &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t\t\t[+] syslog-ng service is already enabled"
+     else
+          echo -e "\t\t\t\t[-] syslog-ng service is disabled, so it will enabled"
+          echo -e "\t\t\t\t\t[*] Enabling syslog-ng service"
+          update-rc.d syslog-ng enable &> /dev/null; echo -e "\t\t\t\t\t\t[*] Done"
+     fi
+else
+     echo -e "\t\t\t\t[-] syslog-ng is not installed, so it will skipped"
+fi
+
+echo -e "\t\t\t[+] 4.2.2.2 Ensure logging is configured (Not Scored)"
+dpkg -s syslog-ng &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t\t\t[+] Please edit the log on /etc/syslog-ng/syslog-ng.conf make sure file as appropiate for your environment"
+else
+     echo -e "\t\t\t\t[-] syslog-ng is not installed, so it will skipped"
+fi
+
+echo -e "\t\t\t[+] 4.2.2.3 Ensure syslog-ng default file permissions configured (Scored)"
+dpkg -s syslog-ng &> /dev/null
+if [ $? -ne 1 ]; then
+     grep "^options { chain_hostnames(off); flush_lines(0); perm(0640); stats_freq(3600); threaded(yes); };" /etc/syslog-ng/syslog-ng.conf &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t\t\t[+] syslog-ng default file permissions is already configured"
+     else
+          echo "options { chain_hostnames(off); flush_lines(0); perm(0640); stats_freq(3600); threaded(yes); };" >> /etc/syslog-ng/syslog-ng.conf
+     fi
+else
+     echo -e "\t\t\t\t[-] syslog-ng is not installed, so it will skipped"
+fi
+
+echo -e "\t\t\t[+] 4.2.2.4 Ensure syslog-ng is configured to send logs to a remote log host (Scored)"
+dpkg -s syslog-ng &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t\t\t[+] This requirements is not available to automate, please configure manually"
+else
+     echo -e "\t\t\t\t[-] syslog-ng is not installed, so it will skipped"
+fi
+
+echo -e "\t\t\t[+] 4.2.2.5 Ensure remote syslog-ng messages are only accepted on designated log hosts (Scored)"
+echo -e "\t\t\t\t[-] This requirements not available to automate, please configure manually"
+
+echo -e "\t\t[+] 4.2.3 Ensure rsyslog or syslog-ng is installed (Scored)"
+dpkg -s rsyslog &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t\t[+] rsyslog is already installed"
+else
+     dpkg -s syslog-ng &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t\t[+] syslog-ng is already installed"
+     else
+          echo -e "\t\t\t[-] rsyslog or syslog-ng is not installed, so rsyslog will installed"
+          echo -e "\t\t\t\t[*] Installing rsyslog"
+          apt-get install rsyslog -y &> /dev/null; echo -e "\t\t\t\t\t[*] Done"
+     fi
+fi
+
+echo -e "\t\t[+] 4.2.4 Ensure permissions on all logfiles are configured (Scored)"
+echo -e "\t\t\t[*] Configuring permissions logfiles"
+chmod -R g-wx,o-rwx /var/log/* &> /dev/null; echo -e "\t\t\t\t[*] Done"
+
+echo -e "\t[+] 4.3 Ensure logrotate is configurated (Not Scored)"
+echo -e "\t\t[*] Done"
+
+echo "[+][+] 5 Access, Authentication and Authorization [+][+]"
+echo -e "\t[+] 5.1 Configure cron"
+echo -e "\t\t[+] 5.1.1 Ensure cron daemon is enabled (Scored)"
+
+systemctl is-enabled cron &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t\t[+] Cron is already enabled"
+else
+     echo -e "\t\t\t[-] Cron is disabled, so it will enabled"
+     echo -e "\t\t\t\t[*] Enabling cron"
+     systemctl enable cron; echo -e "\t\t\t\t\t[*] Done"
+fi
+
+echo -e "\t\t[+] 5.1.2 Ensure permissions on /etc/crontab are configured (Scored)"
+echo -e "\t\t\t[*] Configuring permissions on /etc/crontab"
+chown root:root /etc/crontab
+chmod og-rwx /etc/crontab; echo -e "\t\t\t\t[*] Done"
+
+echo -e "\t\t[+] 5.1.3 Ensure permissions on /etc/cron.hourly are configured (Scored)"
+echo -e "\t\t\t[*] Configuring permissions on /etc/cron.hourly"
+chown root:root /etc/cron.hourly
+chmod og-rwx /etc/cron.hourly; echo -e "\t\t\t\t[*] Done"
+
+echo -e "\t\t[+] 5.1.4 Ensure permissions on /etc/cron.daily are configured (Scored)"
+echo -e "\t\t\t[*] Configuring permissions on /etc/cron.daily"
+chown root:root /etc/cron.daily
+chmod og-rwx /etc/cron.daily; echo -e "\t\t\t\t[*] Done"
+
+echo -e "\t\t[+] 5.1.5 Ensure permissions on /etc/cron.weekly are configured (Scored)"
+echo -e "\t\t\t[*] Configuring permissions on /etc/cron.weekly"
+chown root:root /etc/cron.weekly
+chmod og-rwx /etc/cron.weekly; echo -e "\t\t\t\t[*] Done"
+
+echo -e "\t\t[+] 5.1.6 Ensure permissions on /etc/cron.monthly are configured (Scored)"
+echo -e "\t\t\t[*] Configuring permissions on /etc/cron.monthly"
+chown root:root /etc/cron.monthly
+chmod og-rwx /etc/cron.monthly; echo -e "\t\t\t\t[*] Done"
+
+echo -e "\t\t[+] 5.1.7 Ensure permissions on /etc/cron.d are configured (Scored)"
+echo -e "\t\t\t[*] Configuring permissions on /etc/cron.d"
+chown root:root /etc/cron.d
+chmod og-rwx /etc/cron.d; echo -e "\t\t\t\t[*] Done"
+
+echo -e "\t\t[+] 5.1.8 Ensure at/cron is restricted to authorized users (Scored)"
+echo -e "\t\t\t[*] Removing /etc/cron.deny"; rm -f /etc/cron.deny; echo -e "\t\t\t\t[*] Done"
+echo -e "\t\t\t[*] Removing /etc/at.deny"; rm -f /etc/at.deny; echo -e "\t\t\t\t[*] Done"
+echo -e "\t\t\t[*] Creating file /etc/cron.allow"
+CRONALLOW=/etc/cron.allow
+if test -f "$CRONALLOW"; then
+     echo -e "\t\t\t\t[+] cron.allow is already exists"
+else
+     touch /etc/cron.allow
+     echo -e "\t\t\t\t[*] Done"
+fi
+echo -e "\t\t\t[*] Creating file /etc/at.allow"
+CRONAT=/etc/at.allow
+if test -f "$CRONAT"; then
+     echo -e "\t\t\t\t[+] at.allow is already exists"
+else
+     touch /etc/at.allow
+     echo -e "\t\t\t\t[*] Done"
+fi
+echo -e "\t\t\t[*] Configuring permissions cron.allow and at.allow"
+chmod og-rwx /etc/cron.allow
+chmod og-rwx /etc/at.allow
+chown root:root /etc/cron.allow
+chown root:root /etc/at.allow
+echo -e "\t\t\t\t[*] Done"
+
+echo -e "\t[+] 5.2 SSH Server Configuration"
+echo -e "\t\t[+] 5.2.1 Ensure ppermissions on /etc/sshd_config are configured (Scored)"
+echo -e "\t\t[+] 5.2.2 Ensure SSH Protocol is set to 2 (Scored)"
+echo -e "\t\t[+] 5.2.3 Ensure SSH LogLevel is set to INFO (Scored)"
+echo -e "\t\t[+] 5.2.4 Ensure SSH X11 forwarding is disabled (Scored)"
+echo -e "\t\t[+] 5.2.5 Ensure SSH MaxAuthTries is set to 4 or less (Scored)"
+echo -e "\t\t[+] 5.2.6 Ensure SSH IgnoreRhosts is enabled (Scored)"
+echo -e "\t\t[+] 5.2.7 Ensure SSH HostbasedAuthentication is disabled (Scored)"
+echo -e "\t\t[+] 5.2.8 Ensure SSH root login is disabled (Scored)"
+echo -e "\t\t[+] 5.2.9 Ensure SSH PermitEmptyPasswords is disabled (Scored)"
+echo -e "\t\t[+] 5.2.10 Ensure SSH PermitUserEnvironment is disabled (Scored)"
+echo -e "\t\t[+] 5.2.11 Ensure only approved MAC algorithms are used (Scored)"
+echo -e "\t\t[+] 5.2.12 Ensure SSH Idle Timeout Interval is configured (Scored)"
+echo -e "\t\t[+] 5.2.13 Ensure SSH LoginGraceTime is set to one minute or less (Scored)"
+echo -e "\t\t[+] 5.2.14 Ensure SSH access is limited (Scored)"
+echo -e "\t\t[+] 5.2.15 Ensure SSH warning banner is configured (Scored)"
+echo -e "\t\t\t[*] Requirements above will execute below"
+echo -e "\e[34m---------------------------------------------------------------------------------------------------------\e[00m"
+echo -e "\e[93m[+]\e[00m We will now Create a New User for SSH Access"
+echo -e "\e[34m---------------------------------------------------------------------------------------------------------\e[00m"
+echo ""
+echo -n " Type the new username: "; read username
+adduser $username
+
+echo -n " Securing SSH..."
+sed s/USERNAME/$username/g templates/sshd_config-CIS > /etc/ssh/sshd_config; echo "OK"
+service ssh restart
+
+chown root:root /etc/ssh/sshd_config
+chmod og-rwx /etc/ssh/sshd_config
