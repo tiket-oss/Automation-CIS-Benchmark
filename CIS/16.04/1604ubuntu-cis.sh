@@ -1786,16 +1786,63 @@ echo -e "\t\t[+] 5.2.13 Ensure SSH LoginGraceTime is set to one minute or less (
 echo -e "\t\t[+] 5.2.14 Ensure SSH access is limited (Scored)"
 echo -e "\t\t[+] 5.2.15 Ensure SSH warning banner is configured (Scored)"
 echo -e "\t\t\t[*] Requirements above will execute below"
-echo -e "\e[34m---------------------------------------------------------------------------------------------------------\e[00m"
-echo -e "\e[93m[+]\e[00m We will now Create a New User for SSH Access"
-echo -e "\e[34m---------------------------------------------------------------------------------------------------------\e[00m"
+echo -e "\t\t\t\e[34m---------------------------------------------------------------------------------------------------------\e[00m"
+echo -e "\t\t\t\e[93m[+]\e[00m We will now Create a New User for SSH Access"
+echo -e "\t\t\t\e[34m---------------------------------------------------------------------------------------------------------\e[00m"
 echo ""
-echo -n " Type the new username: "; read username
-adduser $username
+echo -ne "\t\t\t Type the new username: "; read username
+echo -e "\t\t\t" && adduser $username
 
-echo -n " Securing SSH..."
+echo -n "Securing SSH..."
 sed s/USERNAME/$username/g templates/sshd_config-CIS > /etc/ssh/sshd_config; echo "OK"
 service ssh restart
 
 chown root:root /etc/ssh/sshd_config
 chmod og-rwx /etc/ssh/sshd_config
+echo -e "\t\t\t\t[*] Done"
+echo -e "\t[+] 5.3 Configure PAM"
+echo -e "\t\t[+] 5.3.1 Ensure password creation requirements are configured (Scored)"
+echo -e "\t\t[+] 5.3.2 Ensure lockout for failed password attempts is configured (Not Scored)"
+echo -e "\t\t[+] 5.3.3 Ensure password reuse is limited (Scored)"
+echo -e "\t\t[+] 5.3.4 Ensure password hashing algorithm is SHA-512 (Scored)"
+echo -e "\t\t\t[*] Requirements above will execute below"
+echo -e "\t\t\t[*] Configuring"
+cp templates/common-passwd-CIS /etc/pam.d/common-passwd
+cp templates/pwquality-CIS.conf /etc/security/pwquality.conf
+cp templates/common-auth-CIS /etc/pam.d/common-auth
+echo -e "\t\t\t\t[*] Done"
+
+echo -e "\t[+] 5.4 User Accounts and Environment"
+echo -e "\t\t[+] 5.4.1 Set Shadow Password Suite Parameters"
+echo -e "\t\t\t[+] 5.4.1.1 Ensure password expiration is 90 days or less (Scored)"
+echo -e "\t\t\t[+] 5.4.1.2 Ensure minimum days between password changes is 7 or more (Scored)"
+echo -e "\t\t\t[+] 5.4.1.3 Ensure password expiration warning days is 7 or more (Scored)"
+echo -e "\t\t\t\t[*] Requirements above will execute below"
+echo -e "\t\t\t\t[*] Configuring /etc/login.defs"
+cp templates/login.defs-CIS /etc/login.defs; echo -e "\t\t\t\t[*] Done"
+echo -e "\t\t\t[+] 5.4.1.4 Ensure inactive password lock is 30 days or less (Scored)"
+useradd -D | grep "INACTIVE=30" &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t\t\t[-] Inactive password lock is already set to 30"
+else
+     echo -e "\t\t\t\t[+] Inactive password is not set to 30, so it will set to 30"
+     echo -e "\t\t\t\t\t[*] Configure inactive password"
+     useradd -D -f 30; echo -e "\t\t\t\t\t\t[*] Done"
+fi
+
+echo -e "\t\t[+] 5.4.2 Ensure system accounts are non-login (Scored)"
+echo -e "\t\t\t[*] Configure accounts are non-login"
+for user in `awk -F: '($3 < 1000) {print $1 }' /etc/passwd`; do
+  if [ $user != "root" ]; then
+    usermod -L $user
+    if [ $user != "sync" ] && [ $user != "shutdown" ] && [ $user != "halt" ]; then
+      usermod -s /usr/sbin/nologin $user
+    fi
+  fi
+done
+echo -e "\t\t\t\t[*] Done"
+
+echo -e "\t\t[+] 5.4.3 Ensure default group for the root account is GID 0 (Scored)"
+echo -e "\t\t\t[*] Configuring"
+usermod -g 0 root; echo -e "\t\t\t\t[*] Done"
+
