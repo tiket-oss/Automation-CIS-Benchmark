@@ -1834,9 +1834,9 @@ echo -e "\t\t[+] 5.4.2 Ensure system accounts are non-login (Scored)"
 echo -e "\t\t\t[*] Configure accounts are non-login"
 for user in `awk -F: '($3 < 1000) {print $1 }' /etc/passwd`; do
   if [ $user != "root" ]; then
-    usermod -L $user
+    usermod -L $user &> /dev/null
     if [ $user != "sync" ] && [ $user != "shutdown" ] && [ $user != "halt" ]; then
-      usermod -s /usr/sbin/nologin $user
+      usermod -s /usr/sbin/nologin $user &> /dev/null
     fi
   fi
 done
@@ -1844,5 +1844,108 @@ echo -e "\t\t\t\t[*] Done"
 
 echo -e "\t\t[+] 5.4.3 Ensure default group for the root account is GID 0 (Scored)"
 echo -e "\t\t\t[*] Configuring"
-usermod -g 0 root; echo -e "\t\t\t\t[*] Done"
+usermod -g 0 root &> /dev/null; echo -e "\t\t\t\t[*] Done"
 
+echo -e "\t\t[+] 5.4.4 Ensure default user umask is 027 or more restrictive (Scored)"
+echo -e "\t\t\t[*] Configuring default user"
+umask 027 /etc/bash.bashrc; umask 027 /etc/profile; echo -e "\t\t\t\t[*] Done"
+
+echo -e "\t[+] 5.5 Ensure root login is restricted to system console (Not Scored)"
+echo -e "\t\t[-] This requirements is not available to automate, please configure manually"
+echo -e "\t\t[+] Please see manually system console at /etc/securetty"
+
+echo -e "\t[+] 5.6 Ensure access to the su command is restricted (Scored)"
+grep "auth required pam_wheel.so use_uid" /etc/pam.d/su &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[-] su command is already restricted on /etc/pam.d/su"
+else
+     echo -e "\t\t[+] su command is not restricted yet"
+     echo -e "\t\t\t[*] restricted su command"
+     echo "auth required pam_wheel.so use_uid" >> /etc/pam.d/su; echo -e "\t\t\t\t[*] Done"
+fi
+
+echo "[+][+] 6 System Maintenance [+][+]"
+echo -e "\t[+] 6.1 System File Permissions"
+echo -e "\t\t[+] 6.1.1 Audit system file permissions (Not Scored)"
+echo -e "\t\t\t[-] This requirements is not available to automate, please configure manually"
+echo -e "\t\t\t[+] You could manually verify using dpkg --verify > <filename>"
+
+echo -e "\t\t[+] 6.1.2 Ensure permissions on /etc/passwd are configured (Scored)"
+echo -e "\t\t\t[*] Configuring permissions on /etc/passwd"
+chown root:root /etc/passwd; chmod 644 /etc/passwd; echo -e "\t\t\t\t[*] Done"
+
+echo -e "\t\t[+] 6.1.3 Ensure permissions on /etc/shadow are configured (Scored)"
+echo -e "\t\t\t[*] Configuring permissions on /etc/shadow"
+chown root:shadow /etc/shadow; chmod o-rwx,g-wx /etc/shadow; echo -e "\t\t\t\t[*] Done"
+
+echo -e "\t\t[+] 6.1.4 Ensure permissions on /etc/group are configured (Scored)"
+echo -e "\t\t\t[*] Configuring permissions on /etc/group"
+chown root:root /etc/group; chmod 644 /etc/group; echo -e "\t\t\t\t[*] Done"
+
+echo -e "\t\t[+] 6.1.5 Ensure permissions on /etc/gshadow are configured (Scored)"
+echo -e "\t\t\t[*] Configuring permissions on /etc/gshadow"
+chown root:shadow /etc/gshadow; chmod o-rwx,g-wx /etc/gshadow; echo -e "\t\t\t\t[*] Done"
+
+echo -e "\t\t[+] 6.1.6 Ensure permissions on /etc/passwd- are configured (Scored)"
+echo -e "\t\t\t[*] Configuring permissions on /etc/passwd-"
+chown root:root /etc/passwd-; chmod 600 /etc/passwd-; echo -e "\t\t\t\t[*] Done"
+
+echo -e "\t\t[+] 6.1.7 Ensure permissions on /etc/shadow- are configured (Scored)"
+echo -e "\t\t\t[*] Configuring permissions on /etc/shadow-"
+chown root:root /etc/shadow-; chmod 600 /etc/shadow-; echo -e "\t\t\t\t[*] Done"
+
+echo -e "\t\t[+] 6.1.8 Ensure permissions on /etc/group- are configured (Scored)"
+echo -e "\t\t\t[*] Configuring permissions on /etc/group-"
+chown root:root /etc/group-; chmod 600 /etc/group-; echo -e "\t\t\t\t[*] Done"
+
+echo -e "\t\t[+] 6.1.9 Ensure permissions on /etc/gshadow- are configured (Scored)"
+echo -e "\t\t\t[*] Configuring permissions on /etc/gshadow-"
+chown root:root /etc/gshadow-; chmod 600 /etc/gshadow-; echo -e "\t\t\t\t[*] Done"
+
+echo -e "\t\t[+] 6.1.10 Ensure no world writable files exist (Scored)"
+echo -e '\t\t\t[*] Please removing access for "other" category(chmod o-w <filename>)'
+rm -r result; mkdir result
+df --local -P | awk {'if (NR!=1) print $6'} | xargs -I '{}' find '{}' -xdev -type f -perm -0002 > result/6.1.10.txt
+echo -e "\t\t\t[+] File is stored on result/6.1.10.txt"; echo -e "\t\t\t\t[*] Done"
+
+echo -e "\t\t[+] 6.1.11 Ensure no unowned files or directories exist (Scored)"
+echo -e "\t\t\t[*] Please reset the ownership of files to some active user"
+df --local -P | awk {'if (NR!=1) print $6'} | xargs -I '{}' find '{}' -xdev -nouser > result/6.1.11.txt
+echo -e "\t\t\t[+] File is stored on result/6.1.11.txt"; echo -e "\t\t\t\t[*] Done"
+
+echo -e "\t\t[+] 6.1.12 Ensure no upgrouped files or directories exist (Scored)"
+echo -e "\t\t\t[*] Please reset the ownership of files to some active group"
+df --local -P | awk {'if (NR!=1) print $6'} | xargs -I '{}' find '{}' -xdev -nogroup > result/6.1.12.txt
+echo -e "\t\t\t[+] File is stored on result/6.1.12.txt"; echo -e "\t\t\t\t[*] Done"
+
+echo -e "\t\t[+] 6.1.13 Audit SUID executables (Not Scored)"
+echo -e "\t\t\t[*] Ensure that no rogue SUID programs have been introduced into the system"
+df --local -P | awk {'if (NR!=1) print $6'} | xargs -I '{}' find '{}' -xdev -type f -perm -4000 > result/6.1.13.txt
+echo -e "\t\t\t[+] File is stored on result/6.1.13.txt"; echo -e "\t\t\t\t[*] Done"
+
+echo -e "\t\t[+] 6.1.14 Audit SGID executables (Not Scored)"
+echo -e "\t\t\t[*] Ensure that no rogue SGID programs have been introduces into the system"
+df --local -P | awk {'if (NR!=1) print $6'} | xargs -I '{}' find '{}' -xdev -type f -perm -2000 > result/6.1.14.txt
+echo -e "\t\t\t[+] File is stored on result/6.1.14.txt"; echo -e "\t\t\t\t[*] Done"
+
+echo -e "\t[+]6.2 User an d Group Settings"
+echo -e "\t\t[+]6.2.1 Ensure password fields are not empty (Scored)"
+echo -e "\t\t[+]6.2.2 Ensure no legacy "+" entries exist in /etc/passwd (Scored)"
+echo -e "\t\t[+]6.2.3 Ensure no legacy "+" entries exist in /etc/shadow (Scored)"
+echo -e "\t\t[+]6.2.4 Ensure no legacy "+" entries exist in /etc/group (Scored)"
+echo -e "\t\t[+]6.2.5 Ensure root is the only UID 0 account (Scored)"
+echo -e "\t\t[+]6.2.6 Ensure root PATH Integrity (Scored)"
+echo -e "\t\t[+]6.2.7 Ensure all users' home directories exist (Scored)"
+echo -e "\t\t[+]6.2.8 Ensure users' home directories permissions are 750 or more restrictive (Scored)"
+echo -e "\t\t[+]6.2.9 Ensure users own their home directories (Scored)"
+echo -e "\t\t[+]6.2.10 Ensure users' dot files are not group or world writable (Scored)"
+echo -e "\t\t[+]6.2.11 Ensure no users have .forward files (Scored)"
+echo -e "\t\t[+]6.2.12 Ensure no users have .netrc files (Scored)"
+echo -e "\t\t[+]6.2.13 Ensure users' .netrc Files are not group or world accessible (Scored)"
+echo -e "\t\t[+]6.2.14 Ensure no users have .rhosts files (Scored)"
+echo -e "\t\t[+]6.2.15 Ensure all groups in /etc/passwd exist in /etc/group (Scored)"
+echo -e "\t\t[+]6.2.16 Ensure no duplicate UIDs e xist (Scored)"
+echo -e "\t\t[+]6.2.17 Ensure no duplicate GIDs exist (Scored)"
+echo -e "\t\t[+]6.2.18 Ensure no duplicate user names exist (Scored)"
+echo -e "\t\t[+]6.2.19 Ensure no duplicate group names exist (Scored)"
+echo -e "\t\t[+]6.2.20 Ensure shadow group is empty (Scored)"
