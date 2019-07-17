@@ -1928,24 +1928,144 @@ echo -e "\t\t\t[*] Ensure that no rogue SGID programs have been introduces into 
 df --local -P | awk {'if (NR!=1) print $6'} | xargs -I '{}' find '{}' -xdev -type f -perm -2000 > result/6.1.14.txt
 echo -e "\t\t\t[+] File is stored on result/6.1.14.txt"; echo -e "\t\t\t\t[*] Done"
 
-echo -e "\t[+]6.2 User an d Group Settings"
-echo -e "\t\t[+]6.2.1 Ensure password fields are not empty (Scored)"
-echo -e "\t\t[+]6.2.2 Ensure no legacy "+" entries exist in /etc/passwd (Scored)"
-echo -e "\t\t[+]6.2.3 Ensure no legacy "+" entries exist in /etc/shadow (Scored)"
-echo -e "\t\t[+]6.2.4 Ensure no legacy "+" entries exist in /etc/group (Scored)"
-echo -e "\t\t[+]6.2.5 Ensure root is the only UID 0 account (Scored)"
-echo -e "\t\t[+]6.2.6 Ensure root PATH Integrity (Scored)"
-echo -e "\t\t[+]6.2.7 Ensure all users' home directories exist (Scored)"
-echo -e "\t\t[+]6.2.8 Ensure users' home directories permissions are 750 or more restrictive (Scored)"
-echo -e "\t\t[+]6.2.9 Ensure users own their home directories (Scored)"
-echo -e "\t\t[+]6.2.10 Ensure users' dot files are not group or world writable (Scored)"
-echo -e "\t\t[+]6.2.11 Ensure no users have .forward files (Scored)"
-echo -e "\t\t[+]6.2.12 Ensure no users have .netrc files (Scored)"
-echo -e "\t\t[+]6.2.13 Ensure users' .netrc Files are not group or world accessible (Scored)"
-echo -e "\t\t[+]6.2.14 Ensure no users have .rhosts files (Scored)"
-echo -e "\t\t[+]6.2.15 Ensure all groups in /etc/passwd exist in /etc/group (Scored)"
-echo -e "\t\t[+]6.2.16 Ensure no duplicate UIDs e xist (Scored)"
-echo -e "\t\t[+]6.2.17 Ensure no duplicate GIDs exist (Scored)"
-echo -e "\t\t[+]6.2.18 Ensure no duplicate user names exist (Scored)"
-echo -e "\t\t[+]6.2.19 Ensure no duplicate group names exist (Scored)"
-echo -e "\t\t[+]6.2.20 Ensure shadow group is empty (Scored)"
+echo -e "\t[+] 6.2 User an d Group Settings"
+echo -e "\t\t[+] 6.2.1 Ensure password fields are not empty (Scored)"
+cat /etc/shadow | awk -F: '($2 == "" ) { print $1 " does not have a password "}' > result/6.2.1.txt
+sed -i '1s/^/[+] You could lock the account until it can be determined why it does not have a password\n/' result/6.2.1.txt
+sed -i '2s/^/[*] Lock account using command: passwd -l <username>\n/' result/6.2.1.txt
+echo -e "\t\t\t[+] File is stored on result/6.2.1.txt"; echo -e "\t\t\t\t[*] Done"
+
+echo -e "\t\t[+] 6.2.2 Ensure no legacy "+" entries exist in /etc/passwd (Scored)"
+grep '^+:' /etc/passwd > result/6.2.2.txt
+#sed -i '1s/^/[+] Please remove any legacy and entries exist in /etc/passwd\n/' result/6.2.2.txt
+#sed -i -e '1s/^/[+] Please remove any legacy "+" entries exist in /etc/passwd\n/' result/6.2.2.txt
+echo -e "\t\t\t[+] File is stored on result/6.2.2.txt"; echo -e "\t\t\t\t[*] Done"
+
+echo -e "\t\t[+] 6.2.3 Ensure no legacy "+" entries exist in /etc/shadow (Scored)"
+grep '^+:' /etc/shadow > result/6.2.3.txt
+#sed -i -e '1s/^/[+] Please remove "+" legacy and entries from /etc/shadow\n/' result/6.2.3.txt
+echo -e "\t\t\t[+] File is stored on result/6.2.3.txt"; echo -e "\t\t\t\t[*] Done"
+
+
+echo -e "\t\t[+] 6.2.4 Ensure no legacy "+" entries exist in /etc/group (Scored)"
+grep '^+:' /etc/group > result/6.2.4.txt
+#sed -i -e '1s/^/[+] Please remove any legacy "+" entries from /etc/group\n/' result/6.2.4.txt
+echo -e "\t\t\t[+] File is stored on result/6.2.4.txt"; echo -e "\t\t\t\t[*] Done"
+
+echo -e "\t\t[+] 6.2.5 Ensure root is the only UID 0 account (Scored)"
+cat /etc/passwd | awk -F: '($3 == 0) { print $1 }' > result/6.2.5.txt
+sed -i '1s/^/[+] Please remove any user than root with UID 0 or assign them a new UID if appropiate\n/' result/6.2.5.txt
+echo -e "\t\t\t[+] File is stored on result/6.2.5.txt"; echo -e "\t\t\t\t[*] Done"
+
+echo -e "\t\t[+] 6.2.6 Ensure root PATH Integrity (Scored)"
+echo -e "\t\t\t[+] Executing script 6.2.6.sh"
+chmod +x templates/6.2.6.sh
+./templates/6.2.6.sh > result/6.2.6.txt; echo -e "\t\t\t\t[*] Done"
+echo -e "\t\t\t[+] File is stored on result/6.2.6.txt"
+sed -i '1s/^/[+] Correct or justify any items discovered in the Audit Step\n/' result/6.2.6.txt
+
+echo -e "\t\t[+] 6.2.7 Ensure all users' home directories exist (Scored)"
+echo -e "\t\t\t[+] Executing script 6.2.7.sh"
+chmod +x templates/6.2.7.sh
+./templates/6.2.7.sh > result/6.2.7.txt; echo -e "\t\t\t\t[*] Done"
+echo -e "\t\t\t[+] File is stored on result/6.2.7.txt"
+sed -i '1s/^/[+] If any users home directories do not exist, create them and make sure the resprective user owns the directory\n/' result/6.2.7.txt
+sed -i '2s/^/[+] Users without an assigned home directory should be removed or assigned a home directory as appropiate\n/' result/6.2.7.txt
+
+echo -e "\t\t[+] 6.2.8 Ensure users' home directories permissions are 750 or more restrictive (Scored)"
+echo -e "\t\t\t[+] Executing script 6.2.8.sh"
+chmod +x templates/6.2.8.sh
+./templates/6.2.8.sh > result/6.2.8.txt; echo -e "\t\t\t\t[*] Done"
+echo -e "\t\t\t[+] File is stored on result/6.2.8.txt"
+sed -i '1s/^/[+] Making global modificiations to user home directories without alerting the user community can result in unexpected outages and unhappy users\n/' result/6.2.8.txt
+sed -i '2s/^/[+] Please monitoring policy that could be established to report user file permissions and determine the action to be taken in accordance with site policy\n/' result/6.2.8.txt
+
+echo -e "\t\t[+] 6.2.9 Ensure users own their home directories (Scored)"
+echo -e "\t\t\t[+] Executing script 6.2.9.sh"
+chmod +x templates/6.2.9.sh
+./templates/6.2.9.sh > result/6.2.9.txt; echo -e "\t\t\t\t[*] Done"
+echo -e "\t\t\t[+] File is stored on result/6.2.9.txt"
+sed -i '1s/^/[+] Change the ownership of any home directories that are not owned by the defined user to the correct user\n/' result/6.2.9.txt
+
+echo -e "\t\t[+] 6.2.10 Ensure users' dot files are not group or world writable (Scored)"
+echo -e "\t\t\t[+] Executing script 6.2.10.sh"
+chmod +x templates/6.2.10.sh
+./templates/6.2.10.sh > result/6.2.10.txt; echo -e "\t\t\t\t[*] Done"
+echo -e "\t\t\t[+] File is stored on result/6.2.10.txt"
+sed -i '1s/^/[+] Making global modifications to users files without alerting the user community can result in unexpected outages and unhappy users\n/' result/6.2.10.txt
+sed -i '2s/^/[+] It is recommended that a monitoring policy be established to report user dot file permissions and determine the action to be taken in accordance with site policy\n/' result/6.2.10.txt
+
+echo -e "\t\t[+] 6.2.11 Ensure no users have .forward files (Scored)"
+echo -e "\t\t\t[+] Executing script 6.2.11.sh"
+chmod +x templates/6.2.11.sh 
+./templates/6.2.11.sh > result/6.2.11.txt; echo -e "\t\t\t\t[*] Done"
+echo -e "\t\t\t[+] File is stored on result/6.2.11.txt"
+sed -i '1s/^/[+] Making global modifications to users files without alerting the user community can result in unexpected outages and unhappy users\n/' result/6.2.11.txt
+sed -i '2s/^/[+] It is recommended that a monitoring policy is established to report user .forward files and determined the action to be taken in accordance with site policy\n/' result/6.2.11.txt 
+
+echo -e "\t\t[+] 6.2.12 Ensure no users have .netrc files (Scored)"
+echo -e "\t\t\t[+] Executing script 6.2.12.sh"
+chmod +x templates/6.2.12.sh 
+./templates/6.2.12.sh > result/6.2.12.txt; echo -e "\t\t\t\t[*] Done"
+echo -e "\t\t\t[+] File is stored on result/6.2.12.txt"
+sed -i '1s/^/[+] Making global modifications to users files without alerting the user community can result in unexpected outages and unhappy users\n/' result/6.2.12.txt
+sed -i '2s/^/[+] It is recommended that a monitoring policy is established to report user .netrc files and determined the action to be taken in accordance with the site policy\n/' result/6.2.12.txt
+
+echo -e "\t\t[+] 6.2.13 Ensure users' .netrc Files are not group or world accessible (Scored)"
+echo -e "\t\t\t[+] Executing script 6.2.13.sh"
+chmod +x templates/6.2.13.sh 
+./templates/6.2.13.sh > result/6.2.13.txt; echo -e "\t\t\t\t[*] Done"
+echo -e "\t\t\t[+] File is stored on result/6.2.13.txt"
+sed -i '1s/^/[+] Making global modifications to users files without alerting the user community can result in unexpected outages and unhappy users\n/' result/6.2.13.txt
+sed -i '2s/^/[+] It is recommended that a monitoring policy is established to report user .netrc file permissions and determine the action to be taken in accordance with site policy\n/' result/6.2.13.txt
+
+echo -e "\t\t[+] 6.2.14 Ensure no users have .rhosts files (Scored)"
+echo -e "\t\t\t[+] Executing script 6.2.14.sh"
+chmod +x templates/6.2.14.sh 
+./templates/6.2.14.sh > result/6.2.14.txt; echo -e "\t\t\t\t[*] Done"
+echo -e "\t\t\t[+] File is stored on result/6.2.14.txt"
+sed -i '1s/^/[+] Making global modifications to users files without alerting the user community can result in unexpected outages and unhappy users\n/' result/6.2.13.txt
+sed -i '2s/^/[+] It is recommended that a monitoring policy be established to report user .rhosts files and determined the action to be taken in accordance with site policy\n/' result/6.2.14.txt
+
+echo -e "\t\t[+] 6.2.15 Ensure all groups in /etc/passwd exist in /etc/group (Scored)"
+echo -e "\t\t\t[+] Executing script 6.2.15.sh"
+chmod +x templates/6.2.15.sh 
+./templates/6.2.15.sh > result/6.2.15.txt; echo -e "\t\t\t\t[*] Done"
+echo -e "\t\t\t[+] File is stored on result/6.2.15.txt"
+sed -i '1s/^/[+] Analyze the output of the Audit step above and perform the appropiate action to correct any discrepancies found\n/' result/6.2.15.txt
+
+echo -e "\t\t[+] 6.2.16 Ensure no duplicate UIDs exist (Scored)"
+echo -e "\t\t\t[+] Executing script 6.2.16.sh"
+chmod +x templates/6.2.16.sh
+./templates/6.2.16.sh > result/6.2.16.txt; echo -e "\t\t\t\t[*] Done"
+echo -e "\t\t\t[+] File is stored on result/6.2.16.txt" 
+sed -i '1s/^/[+] Based on the results of the audit script, establish unique UUIDs and review all files owned by the shared UIDs to determine which UID they are supposed to belong to\n/' result/6.2.16.txt
+
+echo -e "\t\t[+] 6.2.17 Ensure no duplicate GIDs exist (Scored)"
+echo -e "\t\t\t[+] Executing script 6.2.17.sh"
+chmod +x templates/6.2.17.sh
+./templates/6.2.17.sh > result/6.2.17.txt; echo -e "\t\t\t\t[*] Done"
+echo -e "\t\t\t[+] File is stored on result/6.2.17.txt"
+sed -i '1s/^/[+] Based on the results of the audit script, establish unique GIDs and review all files owned by the shared GID to determine which group\n/' result/6.2.17.txt
+
+echo -e "\t\t[+] 6.2.18 Ensure no duplicate user names exist (Scored)"
+echo -e "\t\t\t[+] Executing script 6.2.18.sh"
+chmod +x templates/6.2.18.sh
+./templates/6.2.18.sh > result/6.2.18.txt; echo -e "\t\t\t\t[*] Done"
+echo -e "\t\t\t[+] File is stored on result/6.2.18.txt"
+sed -i '1s/^/[+] Based on the results of the audit script, establish unique user names for the users. File ownerships will automatically reflect the change as long as the users have unique UIDs\n/' result/6.2.18.txt
+
+echo -e "\t\t[+] 6.2.19 Ensure no duplicate group names exist (Scored)"
+echo -e "\t\t\t[+] Executing script 6.2.19.sh"
+chmod +x templates/6.2.19.sh
+./templates/6.2.19.sh > result/6.2.19.txt; echo -e "\t\t\t\t[*] Done"
+echo -e "\t\t\t[+] File is stored on result/6.2.19.txt"
+sed -i '1s/^/[+] Based on the results of the audit script, establish unique names for the user groups. File group ownerships will automatically reflect the change as long as the groups have unique GIDs\n/' result/6.2.19.txt
+
+echo -e "\t\t[+] 6.2.20 Ensure shadow group is empty (Scored)"
+grep ^shadow:[^:]*:[^:]*:[^:]+ /etc/group > result/6.2.20.txt
+sed -i '1s/^/[+] Remove all useres from the shadow group, and change the primary group of any user with shadow as their primary group\n/' result/6.2.20.txt
+echo -e "\t\t\t[+] File is stored on result/6.2.20.txt"
+echo -e "\t\t\t\t[*] Done"
+
+echo "=========================================================================== DONE ==========================================================================="
