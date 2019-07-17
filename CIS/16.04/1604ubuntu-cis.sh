@@ -20,6 +20,7 @@ echo -e "\t[+] 1.1.1.1 Ensure mounting of cramfs filesystems is disabled (Scored
 dpkg -s cramfs &> /dev/null
 if [ $? -ne 1  ]; then
      echo -e "\t\t[+] cramfs is installed so it will disable"
+     touch /etc/modprobe.d/CIS.conf
      echo "install cramfs/bin/true" >> /etc/modprobe.d/CIS.conf
 else
      echo -e "\t\t[-] cramfs is not installed"
@@ -198,7 +199,7 @@ if [ $? -ne 1 ]; then
      aide --init &> /dev/null; echo -e "\t\t[*] Done"
 else
      echo -e "\t[+] AIDE is not installed yet, so it will installed now"
-     apt-get install aide -y &> /dev/null
+     apt-get install aide
      echo -e "\t[*] Installed is done, now it will configured"
      aide --init &> /dev/null; echo -e "\t\t[*] Done"
 fi
@@ -299,7 +300,7 @@ cat /proc/1/cgroup | grep docker &> /dev/null
 if [ $? -ne 1 ]; then
      echo -e "\t\t[-] You're inside a container so it will skipped"
 else
-     grep "^\s*linux" /boot/grup/grub.cfg | grep selinux=0 &> /dev/null
+     grep "^\s*linux" /boot/grub/grub.cfg | grep selinux=0 &> /dev/null
      if [ $? -ne 1 ]; then
           echo -e "\t\t[*] Please remove all instances of selinux=0 and enforcing=0"
           sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/g' /etc/default/grub
@@ -381,7 +382,7 @@ if [ $? -ne 1 ]; then
      echo -e "\t[-] SELinux is already installed"
 else
      echo -e "\t[+] Installed SELinux"
-     apt-get install selinux -y &> /dev/null
+     apt-get install selinux
      echo -e "\t\t[*] Done"
 fi
 dpkg -s apparmor &> /dev/null
@@ -389,7 +390,7 @@ if [ $? -ne 1 ]; then
      echo -e "\t[-] AppArmor is already installed"
 else
      echo -e "\t[+] Installed AppArmor"
-     apt-get install apparmor -y &> /dev/null
+     apt-get install apparmor
      echo -e "\t\t[*] Done"
 fi
 
@@ -1570,6 +1571,7 @@ fi
 echo -e "\t\t[+] 4.1.1 Configure Data Retention"
 echo -e "\t\t\t[+] Requirements below will execute with auditd-CIS.conf script"
 echo -e "\t\t\t\t[1] 4.1.1.1 Ensure audit log storage size is configured (Not Scored)"
+apt-get install auditd
 echo -e "\t\t\t\t[2] 4.1.1.2 Ensure system is disabled when audit logs are full (Scored)"
 echo -e "\t\t\t\t[3] Ensure audit logs are not automatically deleted (Scored)"
 echo -e "\t\t\t\t\t[*] Executing script"
