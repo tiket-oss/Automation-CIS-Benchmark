@@ -220,9 +220,13 @@ fi
 echo "[+][+] 1.4 Secure Boot Settings [+][+]"
 echo "[+] 1.4.1 Ensure permissions on bootloader config are configured (Scored)"
 echo -e "\t[*] Configuring permission bootloader"
-chown root:root /boot/grub/grub.cfg &> /dev/null
-chown og-rwx /boot/grub/grub.cfg &> /dev/null; echo -e "\t\t[*] Done"
-
+GRUBCFG=/boot/grub/grub.cfg
+if test -f "$GRUBCFG"; then
+     chown root:root /boot/grub/grub.cfg &> /dev/null
+     chown og-rwx /boot/grub/grub.cfg &> /dev/null; echo -e "\t\t[*] Done"
+else
+    echo -e "\t[-] /boot/grub/grub.cfg is not found"
+fi
 echo "[+] 1.4.2 Ensure bootloader password is set (Scored)"
 echo -e "\t[+] We will now set a Bootloader password"
 cat /proc/1/cgroup | grep docker &> /dev/null
@@ -394,7 +398,7 @@ echo -e "\t[+] 1.7.1 Command Line Warning Banners"
 echo -e "\t\t[+] 1.7.1.1 Ensure message of the day is configured properly (Scored)"
 egrep '(\\v|\\r|\\m|\\s)' /etc/motd  &> /dev/null
 if [ $? -ne 1 ]; then
-     echo -e "\t\t\t[+] Please remove any instances of \m, \r, \s, or \v"
+     echo -e '\t\t\t[+] Please remove any instances of "\m", "\r", "\s", or "\v"'
 else
      echo -e "\t\t\t[-] Message of the day is already configured properly"
 fi
@@ -546,81 +550,108 @@ else
 fi
 
 echo -e "\t[+] 2.1.6 Ensure rsh server is not enabled (Scored)"
-cat /etc/xinetd.d/* | grep "shell" &> /dev/null
+dpkg -s xinetd &> /dev/null
 if [ $? -ne 1 ]; then
-     echo -e "\t\t[*] Disabling shell on inet or xinet"
-     find /etc/xinetd.d -type f -exec sed -i "/s/shell/#shell/g" {} \;
-     echo -e "\t\t\t[*] Done"
+     cat /etc/xinetd.d/* | grep "shell" &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[*] Disabling shell on inet or xinet"
+          find /etc/xinetd.d -type f -exec sed -i "/s/shell/#shell/g" {} \;
+          echo -e "\t\t\t[*] Done"
+     #else
+     #     echo -e "\t\t\t[-] shell services already disabled"
+     fi
 else
      echo -e "\t\t[-] shell on inet or xinet is not found"
 fi
 
-cat /etc/xinetd.d/* | grep "login" &> /dev/null
+dpkg -s xinetd &> /dev/null
 if [ $? -ne 1 ]; then
-     echo -e "\t\t[*] Disabling login on inet or xinet"
-     find /etc/xinetd.d -type f -exec sed -i "/s/login/#login/g" {} \;
-     echo -e "\t\t\t[*] Done"
+     cat /etc/xinetd.d/* | grep "login" &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[*] Disabling login on inet or xinet"
+          find /etc/xinetd.d -type f -exec sed -i "/s/login/#login/g" {} \;
+          echo -e "\t\t\t[*] Done"
+     #else
+      #    echo -e "\t\t\t[-] login services already disabled"
+     fi
 else
-
      echo -e "\t\t[-] login on inet or xinet is not found"
 fi
 
-cat /etc/xinetd.d/* | grep "exec" &> /dev/null
+dpkg -s xinetd &> /dev/null
 if [ $? -ne 1 ]; then
-     echo -e "\t\t[*] Disabling exec on inet or xinet"
-     find /etc/xinetd.d -type f -exec sed -i "/s/exec/#exec/g" {} \;
-     echo -e "\t\t\t\[*] Done"
+     cat /etc/xinetd.d/* | grep "exec" &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[*] Disabling exec on inet or xinet"
+          find /etc/xinetd.d -type f -exec sed -i "/s/exec/#exec/g" {} \;
+          echo -e "\t\t\t\[*] Done"
+     fi
 else
      echo -e "\t\t[-] exec on inet or xinet is not found"
 fi
 
 echo -e "\t[+] 2.1.7 Ensure talk server is not enabled (Scored)"
-cat /etc/xinetd.d/* | grep talk &> /dev/null
+dpkg -s xinetd &> /dev/null
 if [ $? -ne 1 ]; then
-     echo -e "\t\t[*] Disabling talk on inet or xinet"
-     find /etc/xinetd.d -type f -exec sed -i "/s/talk/#talk/g" {} \;
+     cat /etc/xinetd.d/* | grep talk &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[*] Disabling talk on inet or xinet"
+          find /etc/xinetd.d -type f -exec sed -i "/s/talk/#talk/g" {} \;
      #apt-get remove talk -y &> /dev/null
-     echo -e "\t\t\t[*] Done"
+          echo -e "\t\t\t[*] Done"
+     fi
 else
      echo -e "\t\t[-] talk on inet or xinet is not found"
 fi
 
-cat /etc/xinetd.d/* | grep ntalk &> /dev/null
+dpkg -s xinetd &> /dev/null
 if [ $? -ne 1 ]; then
-     echo -e "\t\t[*] Disabling ntalk on inet or xinet"
-     find /etc/xinetd.d -type f -exec sed -i "/s/ntalk/#ntalk/g" {} \;
+     cat /etc/xinetd.d/* | grep ntalk &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[*] Disabling ntalk on inet or xinet"
+          find /etc/xinetd.d -type f -exec sed -i "/s/ntalk/#ntalk/g" {} \;
      #apt-get remove ntalk -y &> /dev/null
-     echo -e "\t\t\t[*] Done"
+          echo -e "\t\t\t[*] Done"
+     fi
 else
      echo -e "\t\t[-] ntalk on inet or xinet is not found"
 fi
 
 echo -e "\t[+] 2.1.8 Ensure telnet server is not enabled (Scored)"
-cat /etc/xinetd.d/* | grep telnet &> /dev/null
+dpkg -s xinetd &> /dev/null
 if [ $? -ne 1 ]; then
-     echo -e "\t\t[*] Disabling telnet on inet or xinet"
-     find /etc/xinetd.d -type f -exec sed -i "/s/telnet/#telnet/g" {} \;
-     echo -e "\t\t\t[*] Done"
+     cat /etc/xinetd.d/* | grep telnet &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[*] Disabling telnet on inet or xinet"
+          find /etc/xinetd.d -type f -exec sed -i "/s/telnet/#telnet/g" {} \;
+          echo -e "\t\t\t[*] Done"
+     fi
 else
      echo -e "\t\t[-] telnet on inet or xinet is not found"
 fi
 
 echo -e "\t[+] 2.1.9 Ensure tftp server is not enabled (Scored)"
-cat /etc/xinetd.d/* | grep tftp &> /dev/null
-if [ $? -ne  1 ]; then
-     echo -e "\t\t[*] Disabling telnet on inet or xinet"
-     find /etc/xinetd.d -type f -exec sed -i "/s/tftp/#tftp/g" {} \;
-     echo -e "\t\t\t[*] Done"
+dpkg -s xinetd &> /dev/null
+if [ $? -ne 1 ]; then
+     cat /etc/xinetd.d/* | grep tftp &> /dev/null
+     if [ $? -ne  1 ]; then
+          echo -e "\t\t[*] Disabling telnet on inet or xinet"
+          find /etc/xinetd.d -type f -exec sed -i "/s/tftp/#tftp/g" {} \;
+          echo -e "\t\t\t[*] Done"
+     fi
 else
      echo -e "\t\t[-] tftp on inet or xinet is not found"
 fi
 
 echo -e "\t[+] 2.1.10 Ensure xinetd is not enabled (Scored)"
-systemctl is-enabled xinetd &> /dev/null
+dpkg -s xinetd &> /dev/null
 if [ $? -ne 1 ]; then
-     echo -e "\t\t[+] xinetd is enabled so it will disabled now"
-     echo -e "\t\t[*] Disabled xinetd"
-     systemctl disable xinetd &> /dev/null; echo -e "\t\t\t[*] Done"
+     systemctl is-enabled xinetd &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[+] xinetd is enabled so it will disabled now"
+          echo -e "\t\t[*] Disabled xinetd"
+          systemctl disable xinetd &> /dev/null; echo -e "\t\t\t[*] Done"
+     fi
 else
      echo -e "\t\t[-] xinetd is already disabled"
 fi
@@ -1542,7 +1573,7 @@ echo -e "\t\t\t\t[1] 4.1.1.1 Ensure audit log storage size is configured (Not Sc
 echo -e "\t\t\t\t[2] 4.1.1.2 Ensure system is disabled when audit logs are full (Scored)"
 echo -e "\t\t\t\t[3] Ensure audit logs are not automatically deleted (Scored)"
 echo -e "\t\t\t\t\t[*] Executing script"
-cp templates/auditd-CIS.conf /etc/audit/auditd.conf; echo -e "\t\t\t\t\t\t[*] Done"
+cp -f templates/auditd-CIS.conf /etc/audit/auditd.conf; echo -e "\t\t\t\t\t\t[*] Done"
 
 echo -e "\t\t[+] 4.1.2 Ensure auditd service is enabled (Scored)"
 systemctl is-enabled auditd &> /dev/null
@@ -1585,7 +1616,7 @@ echo -e "\t\t\t[13] 4.1.16 Ensure system administrator actions (sudolog) are col
 echo -e "\t\t\t[14] 4.1.17 Ensure kernel module loading and unloading is collected (Scored)"
 echo -e "\t\t\t[15] 4.1.18 Ensure the audit configuration is immutable (Scored)"
 echo -e "\t\t\t\t[*] Executing script"
-cp templates/audit-CIS.rules /etc/audit/audit.rules
+cp -f templates/audit-CIS.rules /etc/audit/audit.rules
 
 find / -xdev \( -perm -4000 -o -perm -2000 \) -type f | awk '{print \
 "-a always,exit -F path=" $1 " -F perm=x -F auid>=1000 -F auid!=4294967295 \
@@ -1595,7 +1626,7 @@ echo " " >> /etc/audit/audit.rules
 echo "#End of Audit Rules" >> /etc/audit/audit.rules
 echo "-e 2" >> /etc/audit/audit.rules
 
-cp /etc/audit/audit.rules /etc/audit/rules.d/audit.rules; echo -e "\t\t\t\t\t[*] Done"
+cp -f /etc/audit/audit.rules /etc/audit/rules.d/audit.rules; echo -e "\t\t\t\t\t[*] Done"
 
 echo -e "\t[+] 4.2 Configure Logging"
 echo -e "\t\t[+] 4.2.1 Configure rsyslog"
@@ -1904,7 +1935,7 @@ chown root:root /etc/gshadow-; chmod 600 /etc/gshadow-; echo -e "\t\t\t\t[*] Don
 
 echo -e "\t\t[+] 6.1.10 Ensure no world writable files exist (Scored)"
 echo -e '\t\t\t[*] Please removing access for "other" category(chmod o-w <filename>)'
-rm -r result; mkdir result
+rm -r result &> /dev/null; mkdir result
 df --local -P | awk {'if (NR!=1) print $6'} | xargs -I '{}' find '{}' -xdev -type f -perm -0002 > result/6.1.10.txt
 echo -e "\t\t\t[+] File is stored on result/6.1.10.txt"; echo -e "\t\t\t\t[*] Done"
 
