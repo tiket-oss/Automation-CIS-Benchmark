@@ -152,3 +152,85 @@ else
     fi
 fi
 
+echo "[+] 1.2 Configure SOftware Updates"
+echo -e "\t[+] 1.2.1 Ensure package manager repositories are configured (Not Scored)"
+echo -e "\t\t[=] It's not scored so it will skipped"
+
+echo -e "\t[+] 1.2.2 Ensure GPG keys are configured (Not Scored)"
+echo -e "\t\t[-] It's not scored so it will skipped"
+
+echo "[+] 1.3 Filesystem Integrity Checking"
+
+echo -e "\t[+] 1.3.1 Ensure AIDE is installed (Scored)"
+dpkg -s aide &> /dev/null
+if [ $? -ne 1 ]; then
+    echo -e "\t\t[+] AIDE is already installed"
+    echo -e "\t\t[*] Configuring AIDE"
+    aide --init &> /dev/null; echo -e "\t\t[*] Done"
+else
+    echo -e "\t\t[-] AIDE is not installed yet, so it will installed now"
+    apt-get install -y aide &> /dev/null
+    echo -e "\t\t[*] Installed is done, now it will configured"
+    aide --init &> /dev/null; echo -e "\t\t[*] Done"
+fi
+
+echo -e "\t[+] 1.3.2 Ensure filesystem integrity is regulary checked (SCored)"
+crontab -u root -l | grep aide &> /dev/null
+if [ $? -ne 1 ]; then
+   echo -e "\t[-] Filesystem integrity is already regulary checked"
+else
+   echo -e "\t[+] Filesystem integrity is not regulary checked yet"
+   echo -e "\t\t[*] Creating cron filesystem integrity regulary checked"
+   crontab -l > /usr/src/cronaide
+   echo "0 5 * * * /usr/bin/aide --check" >> /usr/src/cronaide
+   crontab /usr/src/cronaide; echo -e "\t\t[*] Restarting cron"
+   rm /usr/src/cronaide
+   service cron restart &> /dev/null; echo -e "\t\t[*] Done"
+fi
+
+echo "[+] 1.4 Secure Boot Settings"
+echo -e "\t[+] 1.4.1 Ensure permissions on bootloader config are configured (Scored)"
+echo -e "\t\t[*] Configuring permission bootloader"
+GRUBCFG=/boot/grub/grub.cfg
+if test -f "$GRUBCFG"; then
+    chown root:root /boot/grub/grub.cfg &> /dev/null
+    chown og-rwx /boot/grub/grub.cfg &> /dev/null; echo -e "\t\t\t[*] Done"
+else
+    echo -e "\t\t[-] /boot/grub/grub.cfg is not found"
+fi
+
+echo -e "\t[+] 1.4.2 Ensure bootloader password is set (Scored)"
+echo -e "\t\t[*] Now we will set a Bootloader password"
+cat /proc/1/group | grep docker &> /dev/null
+if [ $? -ne 1 ]; then
+    echo -e "\t\t\t[-] You're inside a container so it will skipped"
+else
+    grub-mkpasswd-pbkdf2 | tee grubpassword.tmp
+    grubpassword=$(cat grubpassword.tmp | sed -e '1,2d' | cut -d ' ' -f7)
+    echo " set superusers="root" " >> /etc/grub.d/40_custom
+    echo " password_pbkdf2 root $grubpassword " >> /etc/grub.d/40_custom
+    rm grubpassword.tmp
+    update-grub; echo -e "\t\t\t [*] Done"
+fi
+
+echo -e "\t[+] 1.4.3 Ensure authentication required for single user mode (Scored)"
+grep ^root:[*\!]: /etc/shadow &> /dev/null
+if [ $? -ne 1 ]; then
+    echo -e "\t\t[+] Your root user is doesn't have password yet, so it will be set"
+    passwd root; echo -e "\t\t\t[*] Your root password already changed"
+    echo -e "\t\t\t\t[*] Done"
+else
+    echo -e "\t\t[-] Your root user is already have a password"
+fi
+
+
+
+
+
+
+
+
+
+
+
+
