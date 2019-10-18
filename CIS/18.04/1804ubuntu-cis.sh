@@ -223,8 +223,20 @@ else
     echo -e "\t\t[-] Your root user is already have a password"
 fi
 
-
-
+echo "[+] 1.5 Additional Process Hardening"
+echo -e "\t[+] 1.5.1 Ensure core dumps are restricted (Scored)"
+grep "hard core" /etc/security/limits.conf /etc/security/limits.d/* &> /dev/null
+if [ $? -ne 1 ]; then
+    echo -e "\t\t[-] hardcore already set on limits.conf"
+    echo -e "\t\t[-] fs.suid_dumpable already set to 0 on sysctl.conf"
+else
+    echo -e "\t\t[*] Set hard core to 0 on limits.conf"
+    echo "* hard core 0" >> /etc/security/limits.conf; echo -e "\t\t\t[*] Done"
+    echo -e "\t\t[*] Change fs.suid_dumpable to 0 on sysctl.conf"
+    cp templates/sysctl-CIS.conf /etc/sysctl.conf
+    sysctl -w fs.suid_dumpable=0 &> /dev/null
+    sysctl -e -p &> /dev/null; echo -e "\t\t\t[*] Done"
+fi
 
 
 
