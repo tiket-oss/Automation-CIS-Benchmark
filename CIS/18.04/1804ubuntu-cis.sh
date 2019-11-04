@@ -223,14 +223,141 @@ else
     echo -e "\t\t[-] Your root user is already have a password"
 fi
 
+echo "[+] 1.5 Additional Process Hardening"
+echo -e "\t[+] 1.5.1 Ensure core dumps are restricted (Scored)"
+grep "hard core" /etc/security/limits.conf /etc/security/limits.d/* &> /dev/null
+if [ $? -ne 1 ]; then
+    echo -e "\t\t[-] hardcore already set on limits.conf"
+    echo -e "\t\t[-] fs.suid_dumpable already set to 0 on sysctl.conf"
+else
+    echo -e "\t\t[*] Set hard core to 0 on limits.conf"
+    echo "* hard core 0" >> /etc/security/limits.conf; echo -e "\t\t\t[*] Done"
+    echo -e "\t\t[*] Change fs.suid_dumpable to 0 on sysctl.conf"
+    cp templates/sysctl-CIS.conf /etc/sysctl.conf
+    sysctl -w fs.suid_dumpable=0 &> /dev/null
+    sysctl -e -p &> /dev/null; echo -e "\t\t\t[*] Done"
+fi
 
+echo -e "\t[+] 1.5.2 Ensure XD/NX support is enabled (Not Scored)"
+echo -e "\t\t[-] It's not scored so it will skipped"
 
+echo -e "\t[+] 1.5.3 Ensure address space layout randomization (ASLR) is enabled (Scored)"
+sysctl kernel.randomize_va_space &> /dev/null
+if [ $? -ne 1 ]; then
+    echo -e "\t\t[-] kernel.randomize_va_space is already set to 2"
+    echo -e "\t\t[*] Activated Kernel Parameter"
+    sysctl -w kernel.randomize_va_space=2 &> /dev/null; echo -e "\t\t\t[*] Done"
+else
+    echo -e "\t\t[+] Activated Kernel Parameter"
+    sysctl -w kernel.randomize_va_space=2 &> /dev/null; echo -e "\t\t\t[*] Done"
+fi
 
+echo -e "\t[+] 1.5.4 Ensure prelink is disabled (Scored)"
+dpkg -s prelink &> /dev/null
+if [ $? -ne 1 ]; then
+    echo -e "\t\t[-] prelink is installed so it will removed"
+    echo -e "\t\t[*] Restore binaries to normal"
+    prelink -ua &> /dev/null; echo -e "\t\t\t[*] Done"
+    echo -e "\t\t[*] Removing prelink"
+    apt-get remove -y prelink &> /dev/null; echo -e "\t\t[*] Done"
+else
+    echo -e "\t\t[-] prelink is not installed"
+fi
 
+echo "[+] 1.6 Mandatory Access Control"
+echo -e "\t[+] 1.6.1 Configure SELinux"
+echo -e "\t\t[+] 1.6.1.1 Ensure SELinux is not disabled in bootloader configuration (Scored)"
+grep "^\s*linux" /boot/grub/grub.cfg | grep selinux=0 &> /dev/null
+if [ $? -ne 1 ]; then
+    echo -e "\t\t\t[*] Please remove all instances of selinux=0 and enforcing=0"
+    sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/g' /etc/default/grub
+    echo -e "\t\t\t\t[*] Done"
+    echo -e "\t\t\t[*] Updating grub2 configuration"
+    update-grub; echo -e "\t\t\t\t[*] Done"
+else
+    echo -e "\t\t\t[-] Nothing Change"
+fi
 
+echo -e "\t\t[+] 1.6.1.2 Ensure the SELinux state is enforcing (Scored)"
+dpkg -s selinux &> /dev/null
+if [ $? -ne 1 ]; then
+    grep SELINUX=enforcing /etc/selinux/config &> /dev/null
+    if [ $? -ne 1 ]; then
+        echo -e "\t\t\t[-] SELinux is already set to enforcing"
+    else
+        echo -e "\t\t\t[*] Change SELinux parameter to enforcing"
+        sed -i 's/SELINUX=/#SELINUX/g' /etc/selinux/config
+        echo "SELINUX=enforcing" >> /etc/selinux/config
+        echo -e "\t\t\t\t[*] Done"
+    fi
+else
+    echo -e "\t\t[-] SELinux is not installed"
+fi
 
+echo -e "\t\t[+] 1.6.1.3 Ensure SELinux policy is configured (Scored)"
+dpkg -s selinux &> /dev/null
+if [ $? -ne 1 ]; then
+    grep SELINUXTYPE=ubuntu /etc/selinux/config &> /dev/null
+    if [ $? -ne 1 ]; then
+        echo -e "\t\t\t[-] SELINUXTYPE is already set to ubuntu"
+    else
+        echo -e "\t\t\t[+] SELINUXTYPE is not ubuntu so it will change"
+        echo -e "\t\t\t[*] Change SELINUXTYPE to ubuntu"
+        sed -i 's/SELINUXTYPE/#SELINUXTYPE/g' /etc/selinux/config
+        echo "SELINUXTYPE=ubuntu" >> /etc/selinux/config
+        echo -e "\t\t\t\t[*] Done"
+    fi
+else
+    echo -e "\t\t\t[-] SELinux is not installed yet"
+fi
 
+echo -e "\t\t[+] 1.6.1.4 Ensure no unconfined daemons exist (Scored)"
+ps -eZ | egrep "initrc" | egrep -vw "tr|ps|egrep|bash|awk" | tr ':' ' ' | awk '{ print $NF }' &> /dev/null
+if [ $? -ne 1 ]; then
+    echo -e "\t\t\t[-] No unconed daemons exist"
+else
+    ps -eZ | egrep "initrc" | egrep -vw "tr|ps|egrep|bash|awk" | tr ':' ' ' | awk '{ print $NF }' >> Unconfined-Daemons.txt
+    echo -e "\t\t\t[*] Unconfined daemons is found, saved at Unconfined-Daemons.txt"
+    echo -e "\t\t\t[*] Done"
+fi
 
+echo -e "\t[+] 1.6.2 Configure AppArmor"
+echo -e "\t\t[+] 1.6.2.1 Ensure AppArmor is not disabled in bootloader configuration (Scored)"
+grep "quiet" /etc/default/grub &> /dev/null
+if [ $? -ne 1 ]; then
+    echo -e "\t\t\t[-] This requirements is already set on requirement 1.6.1.1"
+else
+    sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quite splash"/GRUB_CMDLINE_LINUX_DEFAULT="quite"' /etc/default/grub
+    update-grub; echo -e "\t\t\t[*] Done"
+fi
 
+echo -e "\t\t[+] 1.6.2.2 Ensure all AppArmor Profiles are enforcing (Scored)"
+dpkg -s apparmor &> /dev/null
+if [ $? -ne 1 ]; then
+    echo -e "\t\t\t[-] AppArmor is already installed"
+    echo -e "\t\t\t[*] Set all profiles to enforce mode"
+    aa-enforce /etc/apparmor.d/* &> /dev/null
+    echo -e "\t\t\t\t[*] Done"
+else
+    echo -e "\t[-] AppArmor is not installed"
+fi
+
+echo -e "\t[+] 1.6.3 Ensure SELinux or AppArmor are installed (Not Scored)"
+dpkg -s selinux &> /dev/null
+if [ $? -ne 1 ]; then
+    echo -e "\t\t[-] SELinux is already installed"
+else
+    echo -e "\t\t[+] Installed SELinux"
+    apt-get install -y selinux
+    echo -e "\t\t[*] Done"
+fi
+dpkg -s apparmor &> /dev/null
+if [ $? -ne 1 ]; then
+    echo -e "\t\t[-] AppArmor is already installed"
+else
+    echo -e "\t\t[+] Installed AppArmor"
+    apt-get install -y apparmor
+    echo -e "\t\t[*] Done"
+fi
 
 
