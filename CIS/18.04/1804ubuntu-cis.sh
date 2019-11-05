@@ -921,3 +921,602 @@ if [ $? -ne 1 ]; then
 else
      echo -e "\t\t[-] snmpd is not installed"
 fi
+
+echo -e "\t[+] 2.2.15 Ensure mail transfer agent is configured for local-only mode (Scored)"
+dpkg -s postfix &> /dev/null
+if [ $? -ne 1 ]; then
+     grep "inet_interfaces = localhost" /etc/postfix/main.cf &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[-] It's already configured"
+     else
+          echo -e "\t\t[+] Adding inet_interfaces on /etc/postfix/main.cf"
+          echo -e "\t\t\t[*] Configuring"
+          echo "inet_interfaces = loopback-only" >> /etc/postfix/main.cf
+          echo -e "\t\t\t\t[*] Done"
+          echo -e "\t\t[+] Restarting postfix service"
+          systemctl restart postfix &> /dev/null
+          echo -e "\t\t\t[*] Done"
+    fi
+else
+     echo -e "\t\t[-] postfix is not installed"
+fi
+
+echo -e "\t[+] 2.2.16 Ensure rsync service is not enabled (Scored)"
+dpkg -s rsync &> /dev/null
+if [ $? -ne 1 ]; then
+     systemctl is-enabled rsync &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[+] rsync is enabled, so it will disabled"
+          echo -e "\t\t[*] Disabling rsync"
+          systemctl disable rsync &> /dev/null
+          echo -e "\t\t\t[*] Done"
+     else
+          echo -e "\t\t[-] rsync is already disabled"
+     fi
+else
+     echo -e "\t\t[-] rsync is not installed"
+fi
+
+echo -e "\t[+] 2.2.17 Ensure NIS Server is not enabled (Scored)"
+dpkg -s nis &> /dev/null
+if [ $? -ne 1 ]; then
+     systemctl is-enabled nis &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[+] nis is enabled, so it will disabled"
+          echo -e "\t\t[*] Disabling nis"
+          systemctl disable nis &> /dev/null
+          echo -e "\t\t\t[*] Done"
+     else
+          echo -e "\t\t[-] nis is already disabled"
+     fi
+else
+     echo -e "\t\t[-] nis is not installed"
+fi
+
+echo "[+] 2.3 Service Clients"
+echo -e "\t[+] 2.3.1 Ensure NIS Client is not installed (Scored)"
+dpkg -s nis &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[+] NIS client is installed, so it will removed"
+     echo -e "\t\t[*] Removing nis"
+     apt-get remove nis -y &> /dev/null
+     echo -e "\t\t\t[*] Done"
+else
+     echo -e "\t\t[-] nis client is not installed"
+fi
+
+echo -e "\t[+] 2.3.2 Ensure rsh client is not installed (Scored)"
+dpkg -s rsh-client &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[+] rsh-client is installed, so it will removed"
+     echo -e "\t\t[*] Removing rsh-client"
+     apt-get remove rsh-client -y &> /dev/null
+     echo -e "\t\t\t[*] Done"
+else
+     echo -e "\t\t[-] rsh-client is not installed"
+fi
+
+dpkg -s rsh-redone-client &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[+] rsh-redone-client is installed, so it will removed"
+     echo -e "\t\t[*] Removing rsh-redone-client"
+     apt-get remove rsh-redone-client -y &> /dev/null
+     echo -e "\t\t\t[*] Done"
+else
+     echo -e "\t\t[-] rsh-redone-client is not installed"
+fi
+
+echo -e "\t[+] 2.3.3 Ensure talk client is not installed (Scored)"
+dpkg -s talk &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[+] talk is installed, so it will removed"
+     echo -e "\t\t[*] Removing talk"
+     apt-get remove talk -y &> /dev/null
+     echo -e "\t\t\t[*] Done"
+else
+     echo -e "\t\t[-] talk is not installed"
+fi
+
+echo -e "\t[+] 2.3.4 Ensure telnet client is not installed (Scored)"
+dpkg -s telnet &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[+] telnet is installed, so it will removed"
+     echo -e "\t\t[*] Removing telnet"
+     apt-get remove telnet -y &> /dev/null
+     echo -e "\t\t\t[*] Done"
+else
+     echo -e "\t\t[-] telnet is not installed"
+fi
+
+echo -e "\t[+] 2.3.5 Ensure LDAP client is not installed (Scored)"
+dpkg -s ldap-utils &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[+] LDAP client is installed, so it will removed"
+     echo -e "\t\t[*] Removing ldap-utils"
+     apt-get remove ldap-utils -y &> /dev/null
+     echo -e "\t\t\t[*] Done"
+else
+     echo -e "\t\t[-] LDAP client is not installed"
+fi
+
+### 3 Network Configuration
+echo "[+] 3.1 Network Parameters (Host Only)"
+echo -e "\t[+] 3.1.1 Ensure IP Forwarding is disabled (Scored)"
+sysctl net.ipv4.ip_forward | grep 0 &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[-] IP Forwarding is already disabled"
+else
+     grep "net.ipv4.ip_forward = 0" /etc/sysctl.conf &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[-] IP Forwarding is already disabled"
+     else
+          echo -e "\t\t[+] IP Forwarding is enabled, so it will disabled"
+          echo -e "\t\t[*] Configuring IP Forwarding"
+          sed -i 's/net.ipv4.ip_forward = 1/net.ipv4.ip_forward = 0/g' /etc/sysctl.conf
+          sysctl -w net.ipv4.ip_forward=0 &> /dev/null
+          sysctl -w net.ipv4.route.flush=1 &> /dev/null
+          echo -e "\t\t\t[*] Done"
+     fi
+fi
+
+echo -e "\t[+] 3.1.2 Ensure packet redirect sending is disabled (Scored)"
+sysctl net.ipv4.conf.all.send_redirects | grep 0 &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[-] net.ipv4.conf.all.send_redirects is already set to 0"
+else
+     grep "net.ipv4.conf.all.send_redirects = 0" /etc/sysctl.conf &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[-] net.ipv4.conf.all.send_redirects is already set to 0"
+     else
+          echo -e "\t\t[+] net.ipv4.conf.all.send_redirects is not set to 0"
+          echo -e "\t\t[*] Configuring net.ipv4.conf.all.send_redirects"
+          sed -i 's/net.ipv4.conf.all.send_redirects/#net.ipv4.conf.all.send_redirects/g' /etc/sysctl.conf
+          echo "net.ipv4.conf.all.send_redirects = 0" >> /etc/sysctl.conf
+          echo -e "\t\t\t[*] Done"
+    fi
+fi
+
+sysctl net.ipv4.conf.default.send_redirects | grep 0 &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[-] net.ipv4.conf.default.send_redirects is already set to 0"
+else
+     grep "net.ipv4.conf.default.send_redirects = 0" /etc/sysctl.conf &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[-] net.ipv4.conf.default.send_redirects is already set to 0"
+     else
+          echo -e "\t\t[+] net.ipv4.conf.default.send_redirects is not set to 0"
+          echo -e "\t\t[*] Configuring net.ipv4.conf.default.send_redirects"
+          sed -i 's/net.ipv4.conf.default.send_redirects/#net.ipv4.conf.default.send_redirects/g' /etc/sysctl.conf
+          echo "net.ipv4.conf.default.send_redirects = 0" >> /etc/sysctl.conf
+          echo -e "\t\t\t[*] Done"
+     fi
+fi
+
+echo -e "\t\t[*] Set the active kernel parameters"
+sysctl -w net.ipv4.conf.all.send_redirects=0 &> /dev/null
+sysctl -w net.ipv4.conf.default.send_redirects=0 &> /dev/null
+sysctl -w net.ipv4.route.flush=1 &> /dev/null; echo -e "\t\t\t[*] Done"
+
+echo "[+] 3.2 Network Parameters (Host and Router)"
+echo -e "\t[+] 3.2.1 Ensure source routed packets are not accepted (Scored)"
+sysctl net.ipv4.conf.all.accept_source_route | grep 0 &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[-] net.ipv4.conf.all.accept_source_route is already set to 0"
+else
+     grep "net.ipv4.conf.all.accept_source_route = 0" /etc/sysctl.conf &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[-] net.ipv4.conf.all.accept_source_route is already set to 0"
+     else
+          echo -e "\t\t[+] net.ipv4.conf.all.accept_source_route is not set to 0"
+          echo -e "\t\t[*] Configuring net.ipv4.conf.all.accept_source_route"
+          sed -i 's/net.ipv4.conf.all.accept_source_route/#net.ipv4.conf.all.accpet_source_route/g' /etc/sysctl.conf
+          echo "net.ipv4.conf.all.accept_source_route = 0" >> /etc/sysctl.conf
+          echo -e "\t\t\t[*] Done"
+     fi
+fi
+
+sysctl net.ipv4.conf.default.accept_source_route | grep 0 &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[-] net.ipv4.conf.default.accept_source_route is already set to 0"
+else
+     grep "net.ipv4.conf.default.accept_source_route = 0" /etc/sysctl.conf &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[-] net.ipv4.conf.default.accept_source_route is already set to 0"
+     else
+          echo -e "\t\t[+] net.ipv4.conf.default.accept_source_route is not set to 0"
+          echo -e "\t\t[*] Configuring net.ipv4.conf.default.accept_source_route"
+          sed -i 's/net.ipv4.conf.default.accept_source_route/#net.ipv4.conf.default.accept_source_route/g' /etc/sysctl.conf
+          echo "net.ipv4.conf.default.accept_source_route = 0" >> /etc/sysctl.conf
+          echo -e "\t\t\t[*] Done"
+    fi
+fi
+
+echo -e "\t\t[*] Set the active kernel parameters"
+sysctl -w net.ipv4.conf.all.accept_source_route=0 &> /dev/null
+sysctl -w net.piv4.conf.default.accept_source_route=0 &> /dev/null
+sysctl -w net.ipv4.route.flush=1 &> /dev/null; echo -e "\t\t\t[*] Done"
+
+echo -e "\t[+] 3.2.2 Ensure ICMP redirects are not accepted (Scored)"
+sysctl net.ipv4.conf.all.accept_redirects | grep 0 &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[-] net.ipv4.conf.all.accept_redirects is already set to 0"
+else
+     grep "net.ipv4.conf.all.accept_redirects = 0" /etc/sysctl.conf &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[-] net.ipv4.conf.all.accept_redirects is already set to 0"
+     else
+          echo -e "\t\t[+] net.ipv4.conf.all.accept_redirects is not set to 0"
+          echo -e "\t\t[*] Configuring net.ipv4.conf.all.accept_redirects"
+          sed -i 's/net.ipv4.conf.all.accept_redirects/#net.ipv4.conf.all.accept_redirects/g' /etc/sysctl.conf
+          echo "net.ipv4.conf.all.accept_redirects = 0" >> /etc/sysctl.conf
+          echo -e "\t\t\t[*] Done"
+     fi
+fi
+
+sysctl net.ipv4.conf.default.accept_redirects | grep 0 &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[-] net.ipv4.conf.default.accept_rediects is already set to 0"
+else
+     grep "net.ipv4.conf.default.accept_redirects = 0" /etc/sysctl.conf &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[-] net.ipv4.conf.default.accept_redirects is already set to 0"
+     else
+          echo -e "\t\t[+] net.ipv4.conf.default.accept_redirects is not set to 0"
+          echo -e "\t\t[*] Configuring net.ipv4.conf.default.accept_redirects"
+          sed -i 's/net.ipv4.conf.default.accept_redirects/#net.ipv4.conf.default.accept_redirects/g' /etc/sysctl.conf
+          echo "net.ipv4.conf.default.accept_redirects = 0" >> /etc/sysctl.conf
+          echo -e "\t\t\t[*] Done"
+     fi
+fi
+
+echo -e "\t\t[*] Set the active kernel parameters"
+sysctl -w net.ipv4.conf.all.accept_redirects=0 &> /dev/null
+sysctl -w net.ipv4.conf.default.accept_redirects=0 &> /dev/null
+sysctl -w net.ipv4.route.flush=1 &> /dev/null; echo -e "\t\t\t[*] Done"
+
+echo -e "\t[+] 3.2.3 Ensure secure ICMP redirects are not accepted (Scored)"
+sysctl net.ipv4.conf.all.secure_redirects | grep 0 &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[-] net.ipv4.conf.all.secure_redirects is already set to 0"
+else
+     grep "net.ipv4.conf.all.accept_redirects = 0" /etc/sysctl.conf &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[-] net.ipv4.conf.all.secure_redirects is already set to 0"
+     else
+          echo -e "\t\t[+] net.ipv4.conf.all.secure_redirects is not set to 0"
+          echo -e "\t\t[*] Configuring net.ipv4.conf.all.secure_redirects"
+          sed -i 's/net.ipv4.conf.all.secure_redirects/#net.ipv4.conf.all.secure_redirects/g' /etc/sysctl.conf
+          echo "net.ipv4.conf.all.secure_redirects = 0" >> /etc/sysctl.conf
+          echo -e "\t\t\t[*] Done"
+     fi
+fi
+
+sysctl net.ipv4.conf.default.secure_redirects | grep 0 &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[-] net.ipv4.conf.default.secure_redirects is already set to 0"
+else
+     grep "net.ipv4.conf.default.secure_redirects = 0" /etc/sysctl.conf &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[-] net.ipv4.conf.default.secure_redirects is already set to 0"
+     else
+          echo -e "\t\t[+] net.ipv4.conf.default.secure_redirects is not set to 0"
+          echo -e "\t\t[*] Configuring net.ipv4.conf.default.secure_redirects"
+          sed -i 's/net.ipv4.conf.default.secure_redirects/#net.ipv4.conf.default.secure_redirects/g' /etc/sysctl.conf
+          echo "net.ipv4.conf.default.secure_redirects = 0" >> /etc/sysctl.conf
+          echo -e "\t\t\t[*] Done"
+     fi
+fi
+
+echo -e "\t\t[*] Set the active kernel parameters"
+sysctl -w net.ipv4.conf.all.secure_redirects=0 &> /dev/null
+sysctl -w net.ipv4.conf.default.secure_redirects=0 &> /dev/null
+sysctl -w.net.ipv4.route.flush=1 &> /dev/null; echo -e "\t\t\t[*] Done"
+
+echo -e "\t[+] 3.2.4 Ensure suspicious packets are logged (Scored)"
+sysctl net.ipv4.conf.all.log_martians | grep 1 &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[-] net.ipv4.conf.all.log_martians is already set to 1 (on)"
+else
+     grep "net.ipv4.conf.all.log_martians = 1" /etc/sysctl.conf &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[-] net.ipv4.conf.all.log_martians is already set to 1 (on)"
+     else
+          echo -e "\t\t[+] net.ipv4.conf.all.log_martians is not set to 1 (on)"
+          echo -e "\t\t[*] Configuring net.ipv4.conf.all.log_martians"
+          sed -i 's/net.ipv4.conf.all.log_martians/#net.ipv4.conf.all.log_martians/g' /etc/sysctl.conf
+          echo "net.ipv4.conf.all.log_martians = 1" >> /etc/sysctl.conf
+          echo -e "\t\t\t[*] Done"
+     fi
+fi
+
+sysctl net.ipv4.conf.default.log_martians | grep 1 &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[-] net.ipv4.conf.default.log_martians is already set to 1 (on)"
+else
+     grep "net.ipv4.conf.default.log_martians = 1" /etc/sysctl.conf &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[-] net.ipv4.conf.default.log_martians is already set to 1 (on)"
+     else
+          echo -e "\t\t[+] net.ipv4.conf.default.log_martians is not set to 1 (on)"
+          echo -e "\t\t[*] Configuring net.ipv4.conf.default.log_martians"
+          sed -i 's/net.ipv4.conf.default.log_martians/#net.ipv4.conf.default.log_martians/g' /etc/sysctl.conf
+          echo "net.ipv4.conf.default.log_martians = 1" >> /etc/sysctl.conf
+          echo -e "\t\t\t[*] Done"
+     fi
+fi
+
+echo -e "\t\t[*] Set the active kernel parameters"
+sysctl -w net.ipv4.conf.all.log_martians=1 &> /dev/null
+sysctl -w net.ipv4.conf.default.log_martians=1 &> /dev/null
+sysctl -w net.ipv4.route.flush=1 &> /dev/null; echo -e "\t\t\t[*] Done"
+
+echo -e "\t[+] 3.2.5 Ensure broadcast ICMP requests are ignored (Scored)"
+sysctl net.ipv4.icmp_echo_ignore_broadcasts | grep 1 &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[-] net.ipv4.icmp_echo_ignore_broadcasts is already set to 1 (Ignored)"
+else
+     grep "net.ipv4.icmp_echo_ignore_broadcasts = 1" /etc/sysctl.conf &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[-] net.ipv4.icmp_echo_ignore_broadcasts is already set to 1 (Ignored)"
+     else
+          echo -e "\t\t[+] net.ipv4.icmp_echo_ignore_broadcasts is not set to 1 (Ignored)"
+          echo -e "\t\t[*] Configuring net.ipv4.icmp_echo_ignore_broadcasts"
+          sed -i 's/net.ipv4.icmp_echo_ignore_broadcasts/#net.ipv4.icmp_echo_ignore_broadcasts/g' /etc/sysctl.conf
+          echo "net.ipv4.icmp_echo_ignore_broadcasts = 1" >> /etc/sysctl.conf
+          echo -e "\t\t\t[*] Done"
+    fi
+fi
+
+echo -e "\t\t[*] Set the active kernel parameters"
+sysctl -w net.ipv4.icmp_echo_ignore_broadcasts=1 &> /dev/null
+sysctl -w net.ipv4.route.flush=1 &> /dev/nul; echo -e "\t\t\t[*] Done"
+
+echo -e "\t[+] 3.2.6 Ensure bogus ICMP responses are ignored (Scored)"
+sysctl net.ipv4.icmp_ignore_bogus_error_responses | grep 1 &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[-] net.ipv4.icmp_ignore_bogus_error_responses is already set to 1 (Ignored)"
+else
+     grep "net.ipv4.icmp_ignore_bogus_error_responses = 1" /etc/sysctl.conf &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[-] net.ipv4.icmp_ignore_bogus_error_responses is already set to 1 (Ignored)"
+     else
+          echo -e "\t\t[+] net.ipv4.icmp_ignore_bogus_error_responses is not set to 1 (Ignored)"
+          echo -e "\t\t[*] Configuring net.ipv4.icmp_ignore_bogus_error_responses"
+          sed -i 's/net.ipv4.icmp_ignore_bogus_error_responses/#net.ipv4.icmp_ignore_bogus_responses/g' /etc/sysctl.conf
+          echo "net.ipv4.icmp_ignore_bogus_error_responses = 1" >> /etc/sysctl.conf
+          echo -e "\t\t\t[*] Done"
+     fi
+fi
+
+echo -e "\t\t[*] Set the active kernel parameters"
+sysctl -w net.ipv4.icmp_ignore_bogus_error_responses=1 &> /dev/null
+sysctl -w net.ipv4.route.flush=1 &> /dev/null; echo -e "\t\t\t[*] Done"
+
+echo -e "\t[+] 3.2.7 Ensure Reverse Path Filtering is enabled (Scored)"
+sysctl net.ipv4.conf.all.rp_filter | grep 1 &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[-] net.ipv4.conf.all.rp_filter is already set to 1 (Enabled)"
+else
+     grep "net.ipv4.conf.all.rp_filter = 1" /etc/sysctl.conf &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[-] net.ipv4.conf.all.rp_filter is already set to 1 (Enabled)"
+     else
+          echo -e "\t\t[-] net.ipv4.conf.all.rp_filter is not set to 1 (Enabled)"
+          echo -e "\t\t[*] Configuring net.ipv4.conf.all.rp_filter"
+          sed -i 's/net.ipv4.conf.all.rp_filter/#net.ipv4.conf.all.rp_filter/g' /etc/sysctl.conf
+          echo "net.ipv4.conf.all.rp_filter = 1" >> /etc/sysctl.conf
+          echo -e "\t\t\t[*] Done"
+     fi
+fi
+
+sysctl net.ipv4.conf.default.rp_filter | grep 1 &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[-] net.ipv4.conf.default.rp_filter is already set to 1 (Enabled)"
+else
+     grep "net.ipv4.conf.default.rp_filter = 1" /etc/sysctl.conf &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[-] net.ipv4.conf.default.rp_filter is already set to 1 (Enabled)"
+     else
+          echo -e "\t\t[+] net.ipv4.conf.default.rp_filter is not set to 1 (Enabled)"
+          echo -e "\t\t[*] Configuring net.ipv4.conf.default.rp_filter"
+          sed -i 's/net.ipv4.conf.default.rp_filter/#net.ipv4.conf.default.rp_filter/g' /etc/sysctl.conf
+          echo "net.ipv4.conf.default.rp_filter = 1" >> /etc/sysctl.conf
+          echo -e "\t\t\t[*] Done"
+    fi
+fi
+
+echo -e "\t\t[*] Set the active kernel parameters"
+sysctl -w net.ipv4.conf.all.rp_filter=1 &> /dev/null
+sysctl -w net.ipv4.conf.default.rp_filter=1 &> /dev/null
+sysctl -w net.ipv4.route.flush=1 &> /dev/null; echo -e "\t\t\t[*] Done"
+
+echo -e "\t[+] 3.2.8 Ensure TCP SYN Cookies is enabled (Scored)"
+sysctl net.ipv4.tcp_syncookies | grep 1 &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[-] net.ipv4.tcp_syncookies is already set to 1 (Enabled)"
+else
+     grep "net.ipv4.tcp_syncookies = 1" /etc/sysctl.conf &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[-] net.ipv4.tcp_syncookies is already set to 1 (Enabled)"
+     else
+          echo -e "\t\t[+] net.ipv4.tcp_syncookies is not set to 1 (Enabled)"
+          echo -e "\t\t[*] Configuring net.ipv4.tcp_syncookies"
+          sed -i 's/net.ipv4.tcp_syncookies/#net.ipv4.tcp_syncookies/g' /etc/sysctl.conf
+          echo "net.ipv4.tcp_syncookies = 1" >> /etc/sysctl.conf
+          echo -e "\t\t\t[*] Done"
+    fi
+fi
+
+echo -e "\t\t[*] Sset the active kernel parameters"
+sysctl -w net.ipv4.tcp_syncookies=1 &> /dev/null
+sysctl -w net.ipv4.route.flush=1 &> /dev/null; echo -e "\t\t\t[*] Done"
+
+echo "[+] 3.3 IPv6"
+echo -e "\t[+] 3.3.1 Ensure IPv6 router advertisements are not accepted (Not Scored)"
+sysctl net.ipv6.conf.all.accept_ra | grep 0 &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[-] net.ipv6.conf.all.accept_ra is already set to 0"
+else
+     grep "net.ipv6.conf.all.accept_ra = 0" /etc/sysctl.conf &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[-] net.ipv6.conf.all.accept_ra is already set to 0"
+     else
+          echo -e "\t\t[+] net.ipv6.conf.all.accept_ra is not set to 0"
+          echo -e "\t\t[*] Configuring net.ipv6.conf.all.accpet_ra"
+          sed -i 's/net.ipv6.conf.all.accept_ra/#net.ipv6.conf.all.accept_ra/g' /etc/sysctl.conf
+          echo "net.ipv6.conf.all.accept_ra = 0" >> /etc/sysctl.conf
+          echo -e "\t\t\t[*] Done"
+     fi
+fi
+
+sysctl net.ipv6.conf.default.accept_ra | grep 0 &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[-] net.ipv6.conf.default.accept_ra is already set to 0"
+else
+    grep "net.ipv6.conf.default.accept_ra = 0" /etc/sysctl.conf &> /dev/null
+    if [ $? -ne 1 ]; then
+         echo -e "\t\t[-] net.ipv6.conf.default.accept_ra is already set to 0"
+    else
+         echo -e "\t\t[+] net.ipv6.conf.default.accept_ra is not set to 0"
+         echo -e "\t\t[*] Configuring net.ipv6.conf.default.accept_ra"
+         sed -i 's/net.ipv6.conf.default.accept_ra/#net.ipv6.conf.default.accept_ra/g' /etc/sysctl.conf
+         echo "net.ipv6.conf.default.accept_ra = 0" >> /etc/sysctl.conf
+         echo -e "\t\t\t[*] Done"
+    fi
+fi
+
+echo -e "\t\t[*] Set the active kernel parameters"
+sysctl -w net.ipv6.conf.all.accept_ra=0 &> /dev/null
+sysctl -w net.ipv6.conf.default.accept_ra=0 &> /dev/null
+sysctl -w net.ipv6.route.flush=1 &> /dev/null; echo -e "\t\t\t[*] Done"
+
+echo -e "\t[+] 3.3.2 Ensure IPv6 redirects are not accepted (Not Scored)"
+sysctl net.ipv6.conf.all.accept_redirects | grep 0 &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[-] net.ipv6.conf.all.accept_redirects is already set to 0"
+else
+     grep "net.ipv6.conf.all.accept_redirects = 0" /etc/sysctl.conf &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[-] net.ipv6.conf.all.accept_redirects is already set to to 0"
+     else
+          echo -e "\t\t[+] net.ipv6.conf.all.accept_redirects is not set to 0"
+          echo -e "\t\t[*] Configuring net.ipv6.conf.all.accept_redirects"
+          sed -i 's/net.ipv6.conf.all.accept_redirects/#net.ipv6.conf.all.accept_redirects/g' /etc/sysctl.conf
+          echo "net.ipv6.conf.all.accept_redirects = 0" >> /etc/sysctl.conf
+          echo -e "\t\t\t[*] Done"
+     fi
+fi
+
+sysctl net.ipv6.conf.default.accept_redirects | grep 0 &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[-] net.ipv6.conf.default.accept_redirects is already set to 0"
+else
+     grep "net.ipv6.conf.default.accept_redirects = 0" /etc/sysctl.conf &> /dev/null
+     if [ $? -ne 1 ]; then
+          echo -e "\t\t[-] net.ipv6.conf.default.accept_redirects is already set to 0"
+     else
+          echo -e "\t\t[+] net.ipv6.conf.default.accept_redirects is not set to 0"
+          echo -e "\t\t[*] Configuring net.ipv6.conf.default.accept_redirects"
+          sed -i 's/net.ipv6.conf.default.accept_redirects/#net.ipv6.conf.default.accept_redirects/g' /etc/sysctl.conf
+          echo "net.ipv6.conf.default.accept_redirects = 0" >> /etc/sysctl.conf
+          echo -e "\t\t\t[*] Done"
+    fi
+fi
+
+echo -e "\t\t[*] Set the active kernel parameters"
+sysctl -w net.ipv6.conf.all.accept_redirects=0 &> /dev/null
+sysctl -w net.ipv6.conf.default.accept_redirects=0 &> /dev/null
+sysctl -w net.ipv6.route.flush=1 &> /dev/null; echo -e "\t\t\t[*] Done"
+
+echo -e "\t[+] 3.3.3 Ensure IPv6 is disabled (Not Scored)"
+cat /proc/1/cgroup | grep docker &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[-] You're inside a container so it will skipped"
+else
+     echo -e "\t\t[+] Disabling IPv6"
+     echo 'GRUB_CMDLINE_LINUX="ipv6.disable=1"' >> /etc/default/grub; echo -e "\t\t\t[*] Done"
+     echo -e "\t\t[*] Updating grub2"
+     update-grub; echo -e "\t\t\t[*] Done"
+fi
+
+echo "[+] 3.4 TCP Wrappers"
+echo -e "\t[+] 3.4.1 Ensure TCP Wrappers is installed (Scored)"
+dpkg -s tcpd &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[-] tcpd is already installed"
+else
+     echo -e "\t\t[+] tcpd is not installed yet, so it will installed"
+     echo -e "\t\t[*] Installing tcpd"
+     apt-get install -y tcpd; echo -e "\t\t\t[*] Done"
+fi
+
+echo -e "\t[+] 3.4.2 Ensure /etc/hosts.allow is configured (Scored)"
+echo -e "\t\t[-] No specific IP, so it will skipped"
+
+echo -e "\t[+] 3.4.2 Ensure /etc/hosts.deny is configured (Scored)"
+echo -e "\t\t[-] No specific IP, so it will skipped"
+
+echo -e "\t[+] 3.4.4 Ensure permissions on /etc/hosts.allow are configured (Scored)"
+echo -e "\t\t[*] Configuring permissions hosts.allow"
+chown root:root /etc/hosts.allow
+chmod 644 /etc/hosts.allow; echo -e "\t\t\t[*] Done"
+
+echo -e "\t[+] 3.4.5 Ensure permissions on /etc/hosts.deny are 644 (Scored)"
+chown root:root /etc/hosts.deny
+chmod 644 /etc/hosts.deny; echo -e "\t\t\t[*] Done"
+
+echo "[+] 3.5 Uncommon Network Protocols"
+echo -e "\t[+] 3.5.1 Ensure DCCP is disabled (Not Scored)"
+cat /etc/modprobe.d/CIS.conf | grep dccp &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[-] dccp is already disabled"
+else
+     echo -e "\t\t[+] dccp is still enable, so it will disabled"
+     echo -e "\t\t[*] Disabling dccp"
+     echo "install dccp /bin/true" >> /etc/modprobe.d/CIS.conf
+     echo -e "\t\t\t[*] Done"
+fi
+
+echo -e "\t[+] 3.5.2 Ensure SCTP is disabled (Not Scored)"
+cat /etc/modprobe.d/CIS.conf | grep sctp &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[-] sctp is already disabled"
+else
+     echo -e "\t\t[+] stcp is still enable, so it will disabled"
+     echo -e "\t\t[*] Disabling sctp"
+     echo "install sctp /bin/true" >> /etc/modprobe.d/CIS.conf
+     echo -e "\t\t\t[*] Done"
+fi
+
+echo -e "\t[+] 3.5.3 Ensure RDS is disabled (Not Scored)"
+cat /etc/modprobe.d/CIS.conf | grep rds &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[-] rds is already disabled"
+else
+     echo -e "\t\t[+] rds is still enable, so it will disabled"
+     echo -e "\t\t[*] Disabling rds"
+     echo "install rds /bin/true" >> /etc/modprobe.d/CIS.conf
+     echo -e "\t\t\t[*] Done"
+fi
+
+echo -e "\t[+] 3.5.4 Enssure TIPC is disabled (Not Scored)"
+cat /etc/modprobe.d/CIS.conf | grep tipc &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[-] tipc is already disabled"
+else
+     echo -e "\t\t[+] tipc is still enable, so it will disabled"
+     echo -e "\t\t[*] Disabling tipc"
+     echo "install tipc /bin/true" >> /etc/modprobe.d/CIS.conf
+     echo -e "\t\t\t[*] Done"
+fi
+
+echo "[+] 3.5 Firewall Configuration"
+echo -e "\t[+] 3.6.1 Ensure iptables is installed (Scored)"
+dpkg -s iptables &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t\t[-] iptables is already installed"
+else
+     echo -e "\t\t[+] iptables is not installed, so it will be install"
+     echo -e "\t\t[*] Installing iptables"
+     apt-get install -y iptables &> /dev/null; echo -e "\t\t\t[*] Done"
+fi
