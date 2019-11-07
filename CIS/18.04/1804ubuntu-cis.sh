@@ -1510,7 +1510,7 @@ else
      echo -e "\t\t\t[*] Done"
 fi
 
-echo "[+] 3.5 Firewall Configuration"
+echo "[+] 3.6 Firewall Configuration"
 echo -e "\t[+] 3.6.1 Ensure iptables is installed (Scored)"
 dpkg -s iptables &> /dev/null
 if [ $? -ne 1 ]; then
@@ -1520,3 +1520,25 @@ else
      echo -e "\t\t[*] Installing iptables"
      apt-get install -y iptables &> /dev/null; echo -e "\t\t\t[*] Done"
 fi
+
+cat /proc/1/cgroup | grep docker &> /dev/null
+if [ $? -ne 1 ]; then
+     echo -e "\t[-] You're inside a container so the requirements below will not execute"
+     echo -e "\t\t[1] 3.6.2 Ensure default deny firewall policy (Scored)"
+     echo -e "\t\t[2] 3.6.3 Ensure loopback traffic is configured (Scored)"
+     echo -e "\t\t[3] 3.6.4 Ensure outbound and established connections are configured (Not Scored)"
+     echo -e "\t\t[4] 3.6.5 Ensure firewall rules exist for all open ports (Scored)"
+else
+     echo -e "\t[+] Requirements below will execute with iptables script"
+     echo -e "\t\t[1] 3.6.2 Ensure default deny firewall policy (Scored)"
+     echo -e "\t\t[2] 3.6.3 Ensure loopback traffic is configured (Scored)"
+     echo -e "\t\t[3] 3..6.4 Ensure outbound and established connections are configured (Not Scored)"
+     echo -e "\t\t[4] 3.6.5 Ensure firewall rules exist for all open ports (scored)"
+     echo -e "\t\t\t[*] Executing iptables rules"
+     sh templates/iptables-CIS.sh &> /dev/null; echo -e "\t\t\t\t[*] Done"
+fi
+
+echo "[+] 3.7 Ensure wireless interfaces are disabled (Not Scored)"
+echo -e "\t[+] Please disable wireless interfaces on the system if not needed"
+
+
