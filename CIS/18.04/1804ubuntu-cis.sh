@@ -169,7 +169,7 @@ if [ $? -ne 1 ]; then
     aide --init &> /dev/null; echo -e "\t\t[*] Done"
 else
     echo -e "\t\t[-] AIDE is not installed yet, so it will installed now"
-    apt-get install -y aide &> /dev/null
+    apt-get install aide &> /dev/null
     echo -e "\t\t[*] Installed is done, now it will configured"
     aide --init &> /dev/null; echo -e "\t\t[*] Done"
 fi
@@ -348,7 +348,7 @@ if [ $? -ne 1 ]; then
     echo -e "\t\t[-] SELinux is already installed"
 else
     echo -e "\t\t[+] Installed SELinux"
-    apt-get install -y selinux
+    apt-get install selinux
     echo -e "\t\t[*] Done"
 fi
 dpkg -s apparmor &> /dev/null
@@ -356,7 +356,7 @@ if [ $? -ne 1 ]; then
     echo -e "\t\t[-] AppArmor is already installed"
 else
     echo -e "\t\t[+] Installed AppArmor"
-    apt-get install -y apparmor
+    apt-get install apparmor
     echo -e "\t\t[*] Done"
 fi
 
@@ -1551,13 +1551,12 @@ if [ $? -ne 1 ]; then
 else
      echo -e "\t\t[-] auditd is not installed so it will installed"
      echo -e "\t\t[*] Installing auditd"
-     apt-get install -y auditd &> /dev/null; echo -e "\t\t\t\[*] Done"
+     apt-get install auditd &> /dev/null; echo -e "\t\t\t\[*] Done"
 fi
 
 echo -e "\t\t[+] 4.1.1 Configure Data Retention"
 echo -e "\t\t\t[+] Requirements below will execute with auditd-CIS.conf script"
 echo -e "\t\t\t\t[1] 4.1.1.1 Ensure audit log storage size is configured (Not Scored)"
-apt-get install -y auditd &> /dev/null
 echo -e "\t\t\t\t[2] 4.1.1.2 Ensure system is disabled when audit logs are full (Scored)"
 echo -e "\t\t\t\t[3] 4.1.1.3 Ensure audit logs are not automatically deleted (Scored)"
 echo -e "\t\t\t\t[4] Ensure audit logs are not automatically deleted (Scored)"
